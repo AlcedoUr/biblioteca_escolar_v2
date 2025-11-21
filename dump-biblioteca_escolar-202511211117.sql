@@ -67,7 +67,7 @@ CREATE TABLE `libros` (
   `imagen_portada` varchar(255) DEFAULT NULL,
   `estado_fisico` enum('BUENO','REGULAR','MALO') DEFAULT 'BUENO',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -76,7 +76,7 @@ CREATE TABLE `libros` (
 
 LOCK TABLES `libros` WRITE;
 /*!40000 ALTER TABLE `libros` DISABLE KEYS */;
-INSERT INTO `libros` VALUES (1,NULL,'Álgebra de Baldor','Aurelio Baldor','General','Grupo Editorial Patria',2005,10,10,'2025-11-20 09:58:05',NULL,'BUENO'),(2,NULL,'Cien Años de Soledad','Gabriel García Márquez','General','Sudamericana',1967,5,5,'2025-11-20 09:58:05',NULL,'BUENO'),(3,NULL,'Historia del Perú','Jorge Basadre','General','Ediciones Historia',2010,3,3,'2025-11-20 09:58:05',NULL,'BUENO'),(4,NULL,'El Principito','Antoine de Saint-Exupéry','General','Reynal & Hitchcock',1943,8,7,'2025-11-20 09:58:05',NULL,'BUENO'),(5,NULL,'Biología Moderna','Varios Autores','Matemática','Santillana',2019,15,15,'2025-11-20 09:58:05',NULL,'BUENO'),(6,NULL,'Matematicas 1','Minedu','General',NULL,NULL,20,10,'2025-11-20 10:14:54',NULL,'BUENO');
+INSERT INTO `libros` VALUES (1,NULL,'Álgebra de Baldor','Aurelio Baldor','General','Grupo Editorial Patria',2005,10,10,'2025-11-20 09:58:05',NULL,'BUENO'),(2,NULL,'Cien Años de Soledad','Gabriel García Márquez','General','Sudamericana',1967,5,5,'2025-11-20 09:58:05',NULL,'BUENO'),(3,NULL,'Historia del Perú','Jorge Basadre','General','Ediciones Historia',2010,3,3,'2025-11-20 09:58:05',NULL,'BUENO'),(4,NULL,'El Principito','Antoine de Saint-Exupéry','General','Reynal & Hitchcock',1943,8,7,'2025-11-20 09:58:05',NULL,'BUENO'),(5,NULL,'Biología Moderna','Varios Autores','Matemática','Santillana',2019,15,15,'2025-11-20 09:58:05',NULL,'BUENO'),(6,NULL,'Matematicas','Minedu','General','',NULL,30,20,'2025-11-20 10:14:54',NULL,'BUENO'),(8,NULL,'COMUNICACION ','MINEDU','COMUNICACION','PRUEBA',NULL,20,20,'2025-11-21 15:31:53',NULL,'BUENO');
 /*!40000 ALTER TABLE `libros` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -93,13 +93,15 @@ CREATE TABLE `personas` (
   `apellidos` varchar(100) NOT NULL,
   `dni` varchar(20) NOT NULL,
   `tipo` enum('ESTUDIANTE','DOCENTE') NOT NULL,
+  `especialidad` varchar(100) DEFAULT NULL,
+  `telefono` varchar(20) DEFAULT NULL,
   `grado` varchar(20) DEFAULT NULL COMMENT 'Solo para estudiantes',
   `seccion` varchar(10) DEFAULT NULL COMMENT 'Solo para estudiantes',
   `estado_biblioteca` enum('ACTIVO','BLOQUEADO') NOT NULL DEFAULT 'ACTIVO',
   `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `dni` (`dni`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -108,7 +110,7 @@ CREATE TABLE `personas` (
 
 LOCK TABLES `personas` WRITE;
 /*!40000 ALTER TABLE `personas` DISABLE KEYS */;
-INSERT INTO `personas` VALUES (1,'Roberto','Gomez Bolaños','10000001','DOCENTE',NULL,NULL,'ACTIVO','2025-11-20 09:58:05'),(2,'Florinda','Meza','10000002','DOCENTE',NULL,NULL,'ACTIVO','2025-11-20 09:58:05'),(3,'Carlos','Villagran','20000001','ESTUDIANTE','5to','A','ACTIVO','2025-11-20 09:58:05'),(4,'Maria','Antonieta','20000002','ESTUDIANTE','3ro','B','BLOQUEADO','2025-11-20 09:58:05');
+INSERT INTO `personas` VALUES (1,'Roberto','Gomez Bolaños','10000001','DOCENTE',NULL,NULL,NULL,NULL,'ACTIVO','2025-11-20 09:58:05'),(2,'Florinda','Meza','10000002','DOCENTE',NULL,NULL,NULL,NULL,'ACTIVO','2025-11-20 09:58:05'),(3,'Carlos','Villagran','20000001','ESTUDIANTE',NULL,NULL,'5to','A','ACTIVO','2025-11-20 09:58:05'),(4,'Maria','Antonieta','20000002','ESTUDIANTE',NULL,NULL,'1ro','B','ACTIVO','2025-11-20 09:58:05'),(5,'jose','alcedo','12345678','ESTUDIANTE',NULL,NULL,'1ro','f','ACTIVO','2025-11-21 16:05:25'),(6,'manuel','urbano','12345677','DOCENTE','Historial Social','123456789',NULL,NULL,'ACTIVO','2025-11-21 16:06:07');
 /*!40000 ALTER TABLE `personas` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -191,4 +193,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-11-21 10:07:50
+-- Dump completed on 2025-11-21 11:17:49
