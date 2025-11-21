@@ -3,57 +3,89 @@ header('Content-Type: application/json');
 require_once '../config/db.php';
 session_start();
 
+// 1. Recibir y decodificar el JSON
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-// Validaciones básicas
+// 2. Validaciones básicas
 if (empty($data['persona_id']) || empty($data['libros'])) {
-    echo json_encode(['exito' => false, 'mensaje' => 'Faltan datos']);
+    echo json_encode(['exito' => false, 'mensaje' => 'Faltan datos del solicitante o libros']);
     exit;
 }
 
 $persona_id = $data['persona_id'];
-$libros = $data['libros']; // Array de libros [{id: 1, cantidad: 5}, ...]
-$usuario_id = $_SESSION['user_id']; // El bibliotecario logueado
+$libros = $data['libros']; 
+$usuario_id = $_SESSION['user_id']; 
 
-// INICIAR TRANSACCIÓN (Todo o Nada)
+// 3. Lógica de Fechas y Tipos
+// Recibimos la fecha de devolución del frontend. Si no viene, calculamos 3 días por defecto.
+$fecha_dev = $data['fecha_devolucion'] ?? date('Y-m-d', strtotime('+3 days'));
+$tipo_prestamo = $data['tipo_prestamo'] ?? 'DOMICILIO';
+$hora_limite = $data['hora_limite'] ?? null;
+
+// Construir la observación con los detalles del préstamo
+$obs_parts = [];
+
+if ($tipo_prestamo === 'AULA') {
+    $obs_parts[] = "Tipo: En Aula";
+    if ($hora_limite) {
+        $obs_parts[] = "Devolución límite hoy a las: " . $hora_limite;
+    }
+} else {
+    $obs_parts[] = "Tipo: Domicilio";
+}
+
+// Si el usuario es docente y envió datos de aula, los agregamos
+if (!empty($data['aula_grado']) && !empty($data['aula_seccion'])) {
+    $obs_parts[] = "Destino: Aula " . $data['aula_grado'] . ' "' . $data['aula_seccion'] . '"';
+}
+
+$observaciones = implode(" | ", $obs_parts);
+
+
+// 4. Iniciar Transacción
 $conn->begin_transaction();
 
 try {
-    // 1. Crear Cabecera del Préstamo
-    // Calculamos fecha devolución (ej: 7 días después)
-    $fecha_dev = date('Y-m-d', strtotime('+7 days'));
+    // A. Insertar Cabecera del Préstamo
+    $stmt = $conn->prepare("INSERT INTO prestamos (id_persona_solicitante, id_usuario_bibliotecario, fecha_devolucion_pactada, estado, observaciones) VALUES (?, ?, ?, 'PENDIENTE', ?)");
+    $stmt->bind_param("iiss", $persona_id, $usuario_id, $fecha_dev, $observaciones);
     
-    $stmt = $conn->prepare("INSERT INTO prestamos (id_persona_solicitante, id_usuario_bibliotecario, fecha_devolucion_pactada, estado) VALUES (?, ?, ?, 'PENDIENTE')");
-    $stmt->bind_param("iis", $persona_id, $usuario_id, $fecha_dev);
-    $stmt->execute();
-    $id_prestamo = $conn->insert_id; // Obtenemos el ID generado
+    if (!$stmt->execute()) {
+        throw new Exception("Error al crear el préstamo: " . $stmt->error);
+    }
+    
+    $id_prestamo = $conn->insert_id;
 
-    // 2. Insertar Detalles y Restar Stock
+    // Preparar sentencias para el detalle y actualización de stock
     $stmt_detalle = $conn->prepare("INSERT INTO detalle_prestamo (id_prestamo, id_libro, cantidad) VALUES (?, ?, ?)");
     $stmt_stock = $conn->prepare("UPDATE libros SET stock_disponible = stock_disponible - ? WHERE id = ? AND stock_disponible >= ?");
 
+    // B. Procesar cada libro del carrito
     foreach ($libros as $item) {
         $libro_id = $item['id'];
         $cantidad = $item['cantidad'];
 
-        // A. Insertar en detalle
+        // 1. Insertar en detalle
         $stmt_detalle->bind_param("iii", $id_prestamo, $libro_id, $cantidad);
-        $stmt_detalle->execute();
+        if (!$stmt_detalle->execute()) {
+            throw new Exception("Error al agregar libro al detalle.");
+        }
 
-        // B. Restar stock (Validando que no quede negativo)
+        // 2. Restar stock (Validando que no quede negativo con la cláusula WHERE)
         $stmt_stock->bind_param("iii", $cantidad, $libro_id, $cantidad);
         $stmt_stock->execute();
 
         if ($stmt_stock->affected_rows === 0) {
-            // Si no afectó filas, es que no había suficiente stock
-            throw new Exception("No hay suficiente stock para el libro ID: " . $libro_id);
+            // Si no afectó filas, es que no había suficiente stock disponible en ese instante
+            // (puede pasar si otro usuario se llevó el libro milisegundos antes)
+            throw new Exception("Stock insuficiente para el libro ID: " . $libro_id . ". Verifique disponibilidad.");
         }
     }
 
-    // Si llegamos aquí, todo salió bien
+    // Si todo salió bien, confirmamos
     $conn->commit();
-    echo json_encode(['exito' => true, 'mensaje' => 'Préstamo registrado correctamente']);
+    echo json_encode(['exito' => true, 'mensaje' => 'Préstamo registrado con éxito']);
 
 } catch (Exception $e) {
     // Si algo falló, deshacemos todo

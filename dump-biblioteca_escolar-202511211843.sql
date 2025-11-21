@@ -33,7 +33,7 @@ CREATE TABLE `detalle_prestamo` (
   KEY `fk_detalle_libro` (`id_libro`),
   CONSTRAINT `fk_detalle_libro` FOREIGN KEY (`id_libro`) REFERENCES `libros` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_detalle_prestamo` FOREIGN KEY (`id_prestamo`) REFERENCES `prestamos` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -42,7 +42,7 @@ CREATE TABLE `detalle_prestamo` (
 
 LOCK TABLES `detalle_prestamo` WRITE;
 /*!40000 ALTER TABLE `detalle_prestamo` DISABLE KEYS */;
-INSERT INTO `detalle_prestamo` VALUES (1,1,4,1,'BUENO'),(2,2,1,5,'BUENO'),(3,3,6,6,'BUENO');
+INSERT INTO `detalle_prestamo` VALUES (1,1,4,1,'BUENO'),(2,2,1,5,'BUENO'),(3,3,6,6,'BUENO'),(4,4,8,10,'PENDIENTE'),(5,5,6,10,'PENDIENTE'),(6,6,1,10,'PENDIENTE'),(7,7,5,5,'PENDIENTE'),(8,8,8,10,'PENDIENTE'),(9,9,6,1,'BUENO'),(10,9,5,1,'PENDIENTE'),(11,9,4,1,'PENDIENTE'),(12,9,3,1,'PENDIENTE'),(13,9,2,1,'PENDIENTE');
 /*!40000 ALTER TABLE `detalle_prestamo` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -76,7 +76,7 @@ CREATE TABLE `libros` (
 
 LOCK TABLES `libros` WRITE;
 /*!40000 ALTER TABLE `libros` DISABLE KEYS */;
-INSERT INTO `libros` VALUES (1,NULL,'Álgebra de Baldor','Aurelio Baldor','General','Grupo Editorial Patria',2005,10,10,'2025-11-20 09:58:05',NULL,'BUENO'),(2,NULL,'Cien Años de Soledad','Gabriel García Márquez','General','Sudamericana',1967,5,5,'2025-11-20 09:58:05',NULL,'BUENO'),(3,NULL,'Historia del Perú','Jorge Basadre','General','Ediciones Historia',2010,3,3,'2025-11-20 09:58:05',NULL,'BUENO'),(4,NULL,'El Principito','Antoine de Saint-Exupéry','General','Reynal & Hitchcock',1943,8,7,'2025-11-20 09:58:05',NULL,'BUENO'),(5,NULL,'Biología Moderna','Varios Autores','Matemática','Santillana',2019,15,15,'2025-11-20 09:58:05',NULL,'BUENO'),(6,NULL,'Matematicas','Minedu','General','',NULL,30,20,'2025-11-20 10:14:54',NULL,'BUENO'),(8,NULL,'COMUNICACION ','MINEDU','COMUNICACION','PRUEBA',NULL,20,20,'2025-11-21 15:31:53',NULL,'BUENO');
+INSERT INTO `libros` VALUES (1,NULL,'Álgebra de Baldor','Aurelio Baldor','General','Grupo Editorial Patria',2005,10,0,'2025-11-20 09:58:05',NULL,'BUENO'),(2,NULL,'Cien Años de Soledad','Gabriel García Márquez','General','Sudamericana',1967,5,4,'2025-11-20 09:58:05',NULL,'BUENO'),(3,NULL,'Historia del Perú','Jorge Basadre','General','Ediciones Historia',2010,3,2,'2025-11-20 09:58:05',NULL,'BUENO'),(4,NULL,'El Principito','Antoine de Saint-Exupéry','General','Reynal & Hitchcock',1943,8,6,'2025-11-20 09:58:05',NULL,'BUENO'),(5,NULL,'Biología Moderna','Varios Autores','Matemática','Santillana',2019,15,9,'2025-11-20 09:58:05',NULL,'BUENO'),(6,NULL,'Matematicas','Minedu','General','',NULL,30,10,'2025-11-20 10:14:54',NULL,'BUENO'),(8,NULL,'COMUNICACION ','MINEDU','COMUNICACION','PRUEBA',NULL,20,0,'2025-11-21 15:31:53',NULL,'BUENO');
 /*!40000 ALTER TABLE `libros` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -135,7 +135,7 @@ CREATE TABLE `prestamos` (
   KEY `fk_prestamos_usuario` (`id_usuario_bibliotecario`),
   CONSTRAINT `fk_prestamos_persona` FOREIGN KEY (`id_persona_solicitante`) REFERENCES `personas` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_prestamos_usuario` FOREIGN KEY (`id_usuario_bibliotecario`) REFERENCES `usuarios` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -144,7 +144,7 @@ CREATE TABLE `prestamos` (
 
 LOCK TABLES `prestamos` WRITE;
 /*!40000 ALTER TABLE `prestamos` DISABLE KEYS */;
-INSERT INTO `prestamos` VALUES (1,3,1,'2025-11-20 04:58:05','2025-11-27',NULL,'FINALIZADO','Préstamo de prueba para lectura domiciliaria.'),(2,2,1,'2025-11-20 05:18:49','2025-11-27',NULL,'FINALIZADO',NULL),(3,4,1,'2025-11-20 20:54:24','2025-11-28',NULL,'FINALIZADO',NULL);
+INSERT INTO `prestamos` VALUES (1,3,1,'2025-11-20 04:58:05','2025-11-27',NULL,'FINALIZADO','Préstamo de prueba para lectura domiciliaria.'),(2,2,1,'2025-11-20 05:18:49','2025-11-27',NULL,'FINALIZADO',NULL),(3,4,1,'2025-11-20 20:54:24','2025-11-28',NULL,'FINALIZADO',NULL),(4,5,1,'2025-11-21 11:53:11','2025-11-26',NULL,'PENDIENTE',NULL),(5,6,1,'2025-11-21 11:55:20','2025-11-28',NULL,'PENDIENTE',NULL),(6,6,1,'2025-11-21 17:37:02','2025-11-21',NULL,'PENDIENTE','Tipo: En Aula | Devolución límite hoy a las: 10:15 | Destino: Aula 5to \"B\"'),(7,3,1,'2025-11-21 17:49:54','2025-11-21',NULL,'PENDIENTE','Tipo: En Aula | Devolución límite hoy a las: 13:05'),(8,2,1,'2025-11-21 17:50:19','2025-11-21',NULL,'PENDIENTE','Tipo: En Aula | Devolución límite hoy a las: 13:05 | Destino: Aula 1ro \"A\"'),(9,3,1,'2025-11-21 18:23:15','2025-11-24',NULL,'PENDIENTE','Tipo: Domicilio');
 /*!40000 ALTER TABLE `prestamos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -193,4 +193,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-11-21 11:17:49
+-- Dump completed on 2025-11-21 18:43:16

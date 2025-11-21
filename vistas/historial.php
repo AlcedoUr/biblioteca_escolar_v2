@@ -57,7 +57,7 @@
         </div>
     </div>
 
-    <!-- TABLA DE SEGUIMIENTO -->
+    <!-- TABLA DE SEGUIMIENTO MEJORADA -->
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -65,8 +65,9 @@
                     <thead class="bg-light">
                         <tr class="text-muted small text-uppercase">
                             <th class="ps-4">Solicitante</th>
-                            <th>Ubicación / Rol</th>
-                            <th style="width: 30%;">Libros Prestados</th> <!-- Columna Ancha -->
+                            <th>Rol</th> <!-- NUEVA COLUMNA ROL -->
+                            <th>Ubicación / Destino</th>
+                            <th style="width: 25%;">Libros Prestados</th>
                             <th>Vencimiento</th>
                             <th>Estado</th>
                             <th>Atraso</th>
@@ -75,27 +76,47 @@
                     </thead>
                     <tbody>
                         <tr v-for="p in prestamosFiltrados" :key="p.id">
+                            
                             <!-- Solicitante -->
                             <td class="ps-4">
                                 <div class="fw-bold text-dark">{{ p.solicitante }}</div>
                                 <small class="text-muted">ID: #{{ p.id }}</small>
                             </td>
 
-                            <!-- Ubicación (Salón) -->
+                            <!-- Rol (Separado para claridad) -->
                             <td>
-                                <span v-if="p.tipo_solicitante == 'ESTUDIANTE'" class="badge bg-light text-dark border">
-                                    <i class="bi bi-backpack me-1"></i> {{ p.grado }} "{{ p.seccion }}"
+                                <span v-if="p.tipo_solicitante == 'ESTUDIANTE'" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10">
+                                    Estudiante
                                 </span>
-                                <span v-else class="badge bg-light text-primary border border-primary">
-                                    <i class="bi bi-person-video3 me-1"></i> Docente
+                                <span v-else class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-10">
+                                    Docente
                                 </span>
                             </td>
 
-                            <!-- Resumen de Libros (NUEVO) -->
+                            <!-- Ubicación (Solo el lugar) -->
+                            <td>
+                                <!-- Prioridad 1: Aula Específica (Docente pidiendo para salón) -->
+                                <div v-if="p.aula_info" class="d-flex align-items-center text-dark fw-bold">
+                                    <i class="bi bi-easel2-fill text-warning me-2"></i>
+                                    {{ p.aula_info }}
+                                </div>
+                                
+                                <!-- Prioridad 2: Salón del Estudiante -->
+                                <div v-else-if="p.tipo_solicitante == 'ESTUDIANTE'" class="text-dark">
+                                    {{ p.grado }} "{{ p.seccion }}"
+                                </div>
+                                
+                                <!-- Prioridad 3: Uso Personal -->
+                                <div v-else class="text-muted small fst-italic">
+                                    -
+                                </div>
+                            </td>
+
+                            <!-- Resumen de Libros -->
                             <td>
                                 <div class="d-flex align-items-center">
                                     <span class="badge bg-secondary me-2">{{ p.total_libros }}</span>
-                                    <span class="text-muted small text-truncate d-inline-block" style="max-width: 250px;" :title="p.resumen_libros">
+                                    <span class="text-muted small text-truncate d-inline-block" style="max-width: 200px;" :title="p.resumen_libros">
                                         {{ p.resumen_libros }}
                                     </span>
                                 </div>
@@ -104,7 +125,6 @@
                             <!-- Fechas -->
                             <td>
                                 <div class="fw-bold text-dark small">{{ p.fecha_devolucion_pactada }}</div>
-                                <small class="text-muted" style="font-size: 0.7rem;">Prestado: {{ p.fecha_prestamo }}</small>
                             </td>
 
                             <!-- Estado -->
@@ -136,7 +156,7 @@
                             </td>
                         </tr>
                         <tr v-if="prestamosFiltrados.length === 0">
-                            <td colspan="7" class="text-center py-5 text-muted">No se encontraron registros.</td>
+                            <td colspan="8" class="text-center py-5 text-muted">No se encontraron registros.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -153,32 +173,45 @@
                     <button type="button" class="btn-close btn-close-white" @click="modal.visible = false"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="small text-muted fw-bold">Solicitante:</label>
-                        <div class="fs-5">{{ modal.data.solicitante }}</div>
-                        <div class="text-muted small" v-if="modal.data.tipo_solicitante == 'ESTUDIANTE'">
-                            {{ modal.data.grado }} "{{ modal.data.seccion }}"
+                    
+                    <!-- CABECERA DEL MODAL -->
+                    <div class="row mb-3 bg-light p-3 rounded mx-0">
+                        <div class="col-6 border-end">
+                            <label class="small text-muted fw-bold d-block text-uppercase" style="font-size: 0.7rem;">Solicitante</label>
+                            <span class="fs-6 text-dark fw-bold">{{ modal.data.solicitante }}</span>
+                            <div class="badge bg-white text-dark border mt-1">{{ modal.data.tipo_solicitante }}</div>
                         </div>
-                        <div class="text-muted small" v-else>Docente / Personal</div>
+                        <div class="col-6 ps-3">
+                            <label class="small text-muted fw-bold d-block text-uppercase" style="font-size: 0.7rem;">Destino</label>
+                            
+                            <div v-if="modal.data.aula_info" class="mt-1">
+                                <span class="fw-bold text-dark"><i class="bi bi-easel2 me-1"></i> Aula {{ modal.data.aula_info }}</span>
+                            </div>
+                            <div v-else-if="modal.data.tipo_solicitante == 'ESTUDIANTE'" class="mt-1">
+                                <span class="fw-bold text-dark">{{ modal.data.grado }} "{{ modal.data.seccion }}"</span>
+                            </div>
+                            <div v-else class="mt-1 text-muted small fst-italic">
+                                Uso Personal
+                            </div>
+                        </div>
                     </div>
                     
-                    <hr>
-                    
-                    <label class="small text-muted fw-bold mb-2">Material Prestado:</label>
-                    <ul class="list-group">
-                        <!-- Parseamos el string de resumen para mostrarlo en lista -->
+                    <label class="small text-muted fw-bold mb-2 text-uppercase">Material Prestado</label>
+                    <ul class="list-group list-group-flush mb-3 border rounded">
                         <li class="list-group-item d-flex justify-content-between align-items-center" 
                             v-for="item in (modal.data.resumen_libros ? modal.data.resumen_libros.split(', ') : [])" :key="item">
-                            <span>{{ item }}</span>
-                            <i class="bi bi-check-circle text-success" v-if="modal.data.estado == 'FINALIZADO'"></i>
-                            <i class="bi bi-clock text-warning" v-else></i>
+                            <span><i class="bi bi-book me-2 text-secondary"></i>{{ item }}</span>
                         </li>
                     </ul>
+
+                    <div v-if="modal.data.observaciones" class="alert alert-info py-2 small mb-0">
+                        <i class="bi bi-info-circle me-1"></i> <strong>Nota:</strong> {{ modal.data.observaciones }}
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="modal.visible = false">Cerrar</button>
                     <a :href="'detalle_prestamo.php?id=' + modal.data.id" class="btn btn-success" v-if="modal.data.estado == 'PENDIENTE'">
-                        Ir a Devolución
+                        <i class="bi bi-box-arrow-in-down me-1"></i> Ir a Devolución
                     </a>
                 </div>
             </div>
@@ -218,8 +251,9 @@
                 return this.prestamos.filter(p => {
                     const textoMatch = 
                         p.solicitante.toLowerCase().includes(this.busqueda.toLowerCase()) ||
-                        (p.resumen_libros && p.resumen_libros.toLowerCase().includes(this.busqueda.toLowerCase())) || // Ahora busca también por nombre de libro
-                        p.id.toString().includes(this.busqueda);
+                        (p.resumen_libros && p.resumen_libros.toLowerCase().includes(this.busqueda.toLowerCase())) || 
+                        p.id.toString().includes(this.busqueda) ||
+                        (p.aula_info && p.aula_info.toLowerCase().includes(this.busqueda.toLowerCase()));
                     
                     let estadoMatch = true;
                     if (this.filtroEstado === 'PENDIENTE') estadoMatch = p.estado === 'PENDIENTE' && !this.esVencido(p);
@@ -242,21 +276,16 @@
             },
             esVencido(prestamo) {
                 if (prestamo.estado !== 'PENDIENTE') return false;
-                
-                // Convertir fecha d/m/Y a objeto Date
                 const partes = prestamo.fecha_devolucion_pactada.split('/');
                 const fechaVence = new Date(partes[2], partes[1] - 1, partes[0]);
-                
                 const hoy = new Date();
                 hoy.setHours(0,0,0,0);
-                
                 return fechaVence < hoy;
             },
             calcularAtraso(fechaStr) {
                 const partes = fechaStr.split('/');
                 const fechaVence = new Date(partes[2], partes[1] - 1, partes[0]);
                 const hoy = new Date();
-                
                 const diferencia = hoy - fechaVence;
                 const dias = Math.ceil(diferencia / (1000 * 60 * 60 * 24));
                 return dias > 0 ? dias : 0;

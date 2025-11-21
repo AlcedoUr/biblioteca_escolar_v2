@@ -2,20 +2,19 @@
 header('Content-Type: application/json');
 require_once '../config/db.php';
 
-// Consulta Vitaminada: Trae datos del salón y un resumen de los títulos prestados
 $sql = "
     SELECT 
         p.id, 
         p.fecha_prestamo, 
         p.fecha_devolucion_pactada, 
         p.estado,
+        p.observaciones, 
         CONCAT(per.nombres, ' ', per.apellidos) as solicitante,
         per.tipo as tipo_solicitante,
         per.grado,
         per.seccion,
         u.username as bibliotecario,
         (SELECT COUNT(*) FROM detalle_prestamo dp WHERE dp.id_prestamo = p.id) as total_libros,
-        -- Truco: Concatenamos los títulos de los libros en un solo string
         (SELECT GROUP_CONCAT(CONCAT(l.titulo, ' (', dp.cantidad, ')') SEPARATOR ', ') 
          FROM detalle_prestamo dp 
          JOIN libros l ON dp.id_libro = l.id 
@@ -27,12 +26,39 @@ $sql = "
 ";
 
 $resultado = $conn->query($sql);
-
 $prestamos = [];
+
 while($row = $resultado->fetch_assoc()) {
-    // Formatear fechas
     $row['fecha_prestamo'] = date("d/m/Y H:i", strtotime($row['fecha_prestamo']));
     $row['fecha_devolucion_pactada'] = date("d/m/Y", strtotime($row['fecha_devolucion_pactada']));
+    
+    // 1. Extraer Aula
+    if (strpos($row['observaciones'], 'Destino: Aula') !== false) {
+        $partes = explode('|', $row['observaciones']);
+        foreach($partes as $parte) {
+            if(strpos($parte, 'Destino: Aula') !== false) {
+                $row['aula_info'] = trim(str_replace('Destino: Aula', '', $parte));
+                $row['aula_info'] = str_replace('"', '', $row['aula_info']);
+            }
+        }
+    }
+    if(empty($row['aula_info'])) $row['aula_info'] = null;
+
+    // 2. Extraer Hora Límite (NUEVO)
+    $row['hora_limite'] = null;
+    if (strpos($row['observaciones'], 'Devolución límite') !== false) {
+        $partes = explode('|', $row['observaciones']);
+        foreach($partes as $parte) {
+            if(strpos($parte, 'Devolución límite') !== false) {
+                // Formato: "Devolución límite hoy a las: 13:05"
+                $time_part = explode(' a las: ', $parte);
+                if(isset($time_part[1])) {
+                    $row['hora_limite'] = trim($time_part[1]);
+                }
+            }
+        }
+    }
+
     $prestamos[] = $row;
 }
 
