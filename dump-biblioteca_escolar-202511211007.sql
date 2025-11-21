@@ -33,7 +33,7 @@ CREATE TABLE `detalle_prestamo` (
   KEY `fk_detalle_libro` (`id_libro`),
   CONSTRAINT `fk_detalle_libro` FOREIGN KEY (`id_libro`) REFERENCES `libros` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_detalle_prestamo` FOREIGN KEY (`id_prestamo`) REFERENCES `prestamos` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -42,7 +42,7 @@ CREATE TABLE `detalle_prestamo` (
 
 LOCK TABLES `detalle_prestamo` WRITE;
 /*!40000 ALTER TABLE `detalle_prestamo` DISABLE KEYS */;
-INSERT INTO `detalle_prestamo` VALUES (1,1,4,1,'PENDIENTE'),(2,2,1,5,'BUENO');
+INSERT INTO `detalle_prestamo` VALUES (1,1,4,1,'BUENO'),(2,2,1,5,'BUENO'),(3,3,6,6,'BUENO');
 /*!40000 ALTER TABLE `detalle_prestamo` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -55,14 +55,17 @@ DROP TABLE IF EXISTS `libros`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `libros` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `isbn` varchar(20) DEFAULT NULL,
   `titulo` varchar(200) NOT NULL,
   `autor` varchar(150) NOT NULL,
+  `categoria` varchar(50) DEFAULT 'General',
   `editorial` varchar(100) DEFAULT NULL,
   `anio` int(11) DEFAULT NULL,
   `stock_total` int(11) NOT NULL DEFAULT 0,
   `stock_disponible` int(11) NOT NULL DEFAULT 0,
-  `ubicacion` varchar(50) DEFAULT NULL COMMENT 'Estante o Pasillo',
   `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp(),
+  `imagen_portada` varchar(255) DEFAULT NULL,
+  `estado_fisico` enum('BUENO','REGULAR','MALO') DEFAULT 'BUENO',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -73,7 +76,7 @@ CREATE TABLE `libros` (
 
 LOCK TABLES `libros` WRITE;
 /*!40000 ALTER TABLE `libros` DISABLE KEYS */;
-INSERT INTO `libros` VALUES (1,'Álgebra de Baldor','Aurelio Baldor','Grupo Editorial Patria',2005,10,10,'E-101','2025-11-20 09:58:05'),(2,'Cien Años de Soledad','Gabriel García Márquez','Sudamericana',1967,5,5,'L-200','2025-11-20 09:58:05'),(3,'Historia del Perú','Jorge Basadre','Ediciones Historia',2010,3,3,'H-050','2025-11-20 09:58:05'),(4,'El Principito','Antoine de Saint-Exupéry','Reynal & Hitchcock',1943,8,6,'L-205','2025-11-20 09:58:05'),(5,'Biología Moderna','Varios Autores','Santillana',2019,15,15,'C-300','2025-11-20 09:58:05'),(6,'Matematicas 1','Minedu',NULL,NULL,10,10,'A-1','2025-11-20 10:14:54');
+INSERT INTO `libros` VALUES (1,NULL,'Álgebra de Baldor','Aurelio Baldor','General','Grupo Editorial Patria',2005,10,10,'2025-11-20 09:58:05',NULL,'BUENO'),(2,NULL,'Cien Años de Soledad','Gabriel García Márquez','General','Sudamericana',1967,5,5,'2025-11-20 09:58:05',NULL,'BUENO'),(3,NULL,'Historia del Perú','Jorge Basadre','General','Ediciones Historia',2010,3,3,'2025-11-20 09:58:05',NULL,'BUENO'),(4,NULL,'El Principito','Antoine de Saint-Exupéry','General','Reynal & Hitchcock',1943,8,7,'2025-11-20 09:58:05',NULL,'BUENO'),(5,NULL,'Biología Moderna','Varios Autores','Matemática','Santillana',2019,15,15,'2025-11-20 09:58:05',NULL,'BUENO'),(6,NULL,'Matematicas 1','Minedu','General',NULL,NULL,20,10,'2025-11-20 10:14:54',NULL,'BUENO');
 /*!40000 ALTER TABLE `libros` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -130,7 +133,7 @@ CREATE TABLE `prestamos` (
   KEY `fk_prestamos_usuario` (`id_usuario_bibliotecario`),
   CONSTRAINT `fk_prestamos_persona` FOREIGN KEY (`id_persona_solicitante`) REFERENCES `personas` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_prestamos_usuario` FOREIGN KEY (`id_usuario_bibliotecario`) REFERENCES `usuarios` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -139,7 +142,7 @@ CREATE TABLE `prestamos` (
 
 LOCK TABLES `prestamos` WRITE;
 /*!40000 ALTER TABLE `prestamos` DISABLE KEYS */;
-INSERT INTO `prestamos` VALUES (1,3,1,'2025-11-20 04:58:05','2025-11-27',NULL,'PENDIENTE','Préstamo de prueba para lectura domiciliaria.'),(2,2,1,'2025-11-20 05:18:49','2025-11-27',NULL,'FINALIZADO',NULL);
+INSERT INTO `prestamos` VALUES (1,3,1,'2025-11-20 04:58:05','2025-11-27',NULL,'FINALIZADO','Préstamo de prueba para lectura domiciliaria.'),(2,2,1,'2025-11-20 05:18:49','2025-11-27',NULL,'FINALIZADO',NULL),(3,4,1,'2025-11-20 20:54:24','2025-11-28',NULL,'FINALIZADO',NULL);
 /*!40000 ALTER TABLE `prestamos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -152,14 +155,17 @@ DROP TABLE IF EXISTS `usuarios`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `usuarios` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id_persona` int(11) DEFAULT NULL,
   `username` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL COMMENT 'En producción usar hash (ej. Argon2/Bcrypt)',
-  `rol` enum('ADMINISTRADOR','BIBLIOTECARIO') NOT NULL DEFAULT 'BIBLIOTECARIO',
+  `rol` enum('ADMINISTRADOR','BIBLIOTECARIO','DOCENTE','ESTUDIANTE') NOT NULL DEFAULT 'ESTUDIANTE',
   `nombre_completo` varchar(100) NOT NULL,
   `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
-  UNIQUE KEY `username` (`username`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE KEY `username` (`username`),
+  KEY `fk_usuario_persona` (`id_persona`),
+  CONSTRAINT `fk_usuario_persona` FOREIGN KEY (`id_persona`) REFERENCES `personas` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -168,7 +174,7 @@ CREATE TABLE `usuarios` (
 
 LOCK TABLES `usuarios` WRITE;
 /*!40000 ALTER TABLE `usuarios` DISABLE KEYS */;
-INSERT INTO `usuarios` VALUES (1,'admin','123456','ADMINISTRADOR','Administrador del Sistema','2025-11-20 09:58:04');
+INSERT INTO `usuarios` VALUES (1,NULL,'admin','12345678','ADMINISTRADOR','Administrador del Sistema','2025-11-20 09:58:04'),(2,NULL,'bibliotecario','biblio123','BIBLIOTECARIO','Encargado de Biblioteca','2025-11-21 00:45:38'),(3,NULL,'profe1','profe123','DOCENTE','Profesor Juan Perez','2025-11-21 00:45:38');
 /*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -185,4 +191,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-11-20 11:47:11
+-- Dump completed on 2025-11-21 10:07:50

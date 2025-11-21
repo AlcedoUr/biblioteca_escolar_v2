@@ -3,193 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - I.E. Virgen de las Mercedes</title>
+    <title>Acceso - Biblioteca Virgen de las Mercedes</title>
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Iconos -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Fuente Google -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
-        /* 1. EL DEGRADADO DE FONDO (Robado del código React) */
         body {
-            /* bg-gradient-to-br from-[#8B1538] via-[#a01a45] to-[#6b0f2a] */
             background: linear-gradient(135deg, #8B1538 0%, #a01a45 50%, #6b0f2a 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
         }
 
-        /* 2. LA TARJETA FLOTANTE */
-        .card-login {
+        .card-main {
             border: none;
-            border-radius: 1rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* Sombra fuerte */
-            max-width: 400px;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+            max-width: 450px;
             width: 100%;
             overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
         }
 
-        /* 3. EL LOGO CIRCULAR */
-        .logo-circle {
-            width: 80px;
-            height: 80px;
-            background-color: #8B1538; /* Color Institucional */
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto; /* Centrado */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        /* Estilos Selección de Rol */
+        .role-card {
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
         }
-        
-        .logo-icon {
-            color: #D4AF37; /* Color Dorado del Icono */
-            font-size: 2.5rem;
-        }
-
-        /* 4. TEXTOS INSTITUCIONALES */
-        .text-school { color: #8B1538; font-weight: bold; }
-        .text-gold { color: #D4AF37; }
-
-        /* 5. INPUTS CON ICONO ADENTRO (Como en Figma) */
-        .input-wrapper { position: relative; margin-bottom: 1rem; }
-        
-        .input-wrapper i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6c757d; /* text-muted */
-        }
-
-        .input-custom {
-            padding-left: 45px; /* Espacio para el icono */
-            height: 50px;
-            border-radius: 0.5rem;
-            border: 1px solid #e2e8f0;
-        }
-        .input-custom:focus {
+        .role-card:hover {
+            transform: translateY(-3px);
             border-color: #8B1538;
-            box-shadow: 0 0 0 4px rgba(139, 21, 56, 0.1);
+            background-color: #fff5f7;
         }
 
-        /* 6. BOTÓN PERSONALIZADO */
-        .btn-school {
+        /* Inputs Personalizados */
+        .input-group-text { background: white; border-right: 0; }
+        .form-control { border-left: 0; box-shadow: none !important; }
+        .form-control:focus { border-color: #ced4da; }
+        
+        /* Botón Principal */
+        .btn-vino {
             background-color: #8B1538;
             color: white;
-            height: 50px;
             font-weight: 600;
-            border-radius: 0.5rem;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
-        .btn-school:hover {
-            background-color: #6b0f2a; /* Un poco más oscuro al pasar el mouse */
-            color: white;
+        .btn-vino:hover { background-color: #6b0f2a; color: white; }
+        .btn-vino:disabled { background-color: #ccc; border-color: #ccc; }
+
+        .caps-warning {
+            font-size: 0.75rem;
+            color: #e67e22;
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            animation: fadeIn 0.3s;
         }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div class="container p-4">
-        <div class="card card-login mx-auto bg-white">
-            <div class="card-body p-5">
+<div id="app" class="container p-3">
+    <div class="card card-main mx-auto">
+        <div class="card-body p-5">
+            
+            <!-- LOGO Y TÍTULO -->
+            <div class="text-center mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle shadow-sm mb-3" style="width: 80px; height: 80px; border: 4px solid #f8f9fa;">
+                    <i class="bi bi-book-half fs-1" style="color: #8B1538;"></i>
+                </div>
+                <h4 class="fw-bold mb-1" style="color: #8B1538;">Biblioteca Digital</h4>
+                <small class="text-muted">I.E. Virgen de las Mercedes</small>
+            </div>
+
+            <!-- PANTALLA 1: SELECCIÓN DE ROL -->
+            <div v-if="step === 1" class="animate-fade">
+                <p class="text-center text-dark mb-4 fw-bold">¿Cómo desea ingresar?</p>
                 
-                <div class="text-center mb-4">
-                    <div class="logo-circle mb-3">
-                        <i class="bi bi-book-half logo-icon"></i>
+                <!-- Opción Alumno -->
+                <div class="card role-card mb-3 p-3 shadow-sm" @click="irACatalogo">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-light rounded-circle p-3 me-3 text-primary">
+                            <i class="bi bi-backpack fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">Soy Estudiante</h6>
+                            <small class="text-muted">Buscar libros y reservar</small>
+                        </div>
+                        <i class="bi bi-chevron-right ms-auto text-muted"></i>
                     </div>
-                    <h4 class="card-title text-school mb-1">Biblioteca Virgen de las Mercedes</h4>
-                    <p class="text-muted small">I.E. N.° 3054 - Sistema de Gestión</p>
                 </div>
 
-                <form id="formLogin">
+                <!-- Opción Docente / Admin -->
+                <div class="card role-card p-3 shadow-sm" @click="step = 2">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-light rounded-circle p-3 me-3 text-danger">
+                            <i class="bi bi-person-badge fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">Gestión / Docente</h6>
+                            <small class="text-muted">Acceso al sistema</small>
+                        </div>
+                        <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANTALLA 2: FORMULARIO DE LOGIN -->
+            <div v-if="step === 2" class="animate-fade">
+                
+                <!-- Botón Volver -->
+                <button class="btn btn-link text-muted text-decoration-none p-0 mb-3" @click="volverASeleccion">
+    <i class="bi bi-arrow-left me-1"></i> Volver
+</button>
+
+
+                <form @submit.prevent="login">
                     
-                    <div class="input-wrapper">
-                        <label class="form-label fw-bold small">Usuario</label>
-                        <div class="position-relative">
-                            <i class="bi bi-person"></i> <input type="text" id="username" class="form-control input-custom" placeholder="Ingrese su usuario" required autofocus>
+                    <!-- Usuario -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Usuario</label>
+                        <div class="input-group border rounded">
+                            <span class="input-group-text bg-white text-muted"><i class="bi bi-person"></i></span>
+                            <input type="text" 
+                                   v-model="usuario" 
+                                   @input="limpiarUsuario"
+                                   class="form-control border-0" 
+                                   placeholder="Ej. admin"
+                                   maxlength="15"
+                                   required>
+                        </div>
+                        <div class="text-end text-muted" style="font-size: 0.7rem;">
+                            {{ usuario.length }}/15
                         </div>
                     </div>
 
-                    <div class="input-wrapper">
-                        <label class="form-label fw-bold small">Contraseña</label>
-                        <div class="position-relative">
-                            <i class="bi bi-lock"></i> <input type="password" id="password" class="form-control input-custom" placeholder="Ingrese su contraseña" required>
+                    <!-- Contraseña -->
+                    <div class="mb-4 position-relative">
+                        <label class="form-label small fw-bold text-muted">Contraseña</label>
+                        <div class="input-group border rounded" :class="{'border-danger': password.length > 0 && password.length < 8}">
+                            <span class="input-group-text bg-white text-muted"><i class="bi bi-lock"></i></span>
+                            <input :type="mostrarPassword ? 'text' : 'password'" 
+                                   v-model="password" 
+                                   @keydown="detectarCaps"
+                                   @keyup="detectarCaps"
+                                   class="form-control border-0" 
+                                   placeholder="Mínimo 8 caracteres"
+                                   required>
+                            <button type="button" class="btn bg-white border-0 text-muted" @click="mostrarPassword = !mostrarPassword">
+                                <i class="bi" :class="mostrarPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Avisos de Contraseña -->
+                        <div v-if="capsLockOn" class="caps-warning">
+                            <i class="bi bi-capslock-fill me-1"></i> Bloq Mayús activado
+                        </div>
+                        <div v-if="password.length > 0 && password.length < 8" class="text-danger mt-1" style="font-size: 0.75rem;">
+                            <i class="bi bi-exclamation-circle me-1"></i> Faltan {{ 8 - password.length }} caracteres
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-school w-100 mt-3">
-                        <span id="btnText">Iniciar Sesión</span>
-                        <span id="btnLoading" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                    <!-- Botón Ingresar -->
+                    <button type="submit" 
+                            class="btn btn-vino w-100 py-2 rounded-3" 
+                            :disabled="cargando || password.length < 8 || usuario.length === 0">
+                        <span v-if="cargando" class="spinner-border spinner-border-sm me-2"></span>
+                        {{ cargando ? 'Validando...' : 'Iniciar Sesión' }}
                     </button>
 
-                    <div id="alerta" class="mt-3 alert alert-danger d-none text-center small p-2"></div>
+                    <div v-if="errorMsg" class="alert alert-danger mt-3 py-2 small text-center mb-0 border-0 bg-danger bg-opacity-10 text-danger">
+                        <i class="bi bi-x-circle-fill me-1"></i> {{ errorMsg }}
+                    </div>
 
                 </form>
-
-                <div class="mt-4 pt-4 border-top text-center">
-                    <p class="small text-muted mb-2">Credenciales de demostración:</p>
-                    <div class="bg-light p-2 rounded small text-muted text-start">
-                        <div><strong>Admin:</strong> admin / 123456</div>
-                        <div><strong>Docente:</strong> rbolaños / 12345678</div>
-                    </div>
-                </div>
-
             </div>
+
         </div>
     </div>
+    
+    <div class="text-center mt-3 text-white-50 small">
+        &copy; <?php echo date('Y'); ?> Biblioteca Escolar - v2.0
+    </div>
+</div>
 
-    <script>
-        document.getElementById('formLogin').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
-            const alerta = document.getElementById('alerta');
-            const btnText = document.getElementById('btnText');
-            const btnLoading = document.getElementById('btnLoading');
-            const btn = document.querySelector('button[type="submit"]');
+<script>
+    const { createApp } = Vue
 
-            // Estado de carga (UX)
-            alerta.classList.add('d-none');
-            btn.disabled = true;
-            btnText.textContent = 'Validando...';
-            btnLoading.classList.remove('d-none');
-
-            try {
-                const respuesta = await fetch('api/login.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, password: pass })
-                });
-
-                const datos = await respuesta.json();
-
-                if (datos.exito) {
-                    // Éxito: Esperamos 1 seg para que el usuario vea el efecto
-                    btn.classList.remove('btn-school');
-                    btn.classList.add('btn-success');
-                    btnText.textContent = '¡Bienvenido!';
-                    setTimeout(() => {
-                        window.location.href = 'vistas/dashboard.php';
-                    }, 800);
-                } else {
-                    // Error
-                    alerta.textContent = datos.mensaje;
-                    alerta.classList.remove('d-none');
-                    btn.disabled = false;
-                    btnText.textContent = 'Iniciar Sesión';
-                    btnLoading.classList.add('d-none');
-                }
-            } catch (error) {
-                console.error(error);
-                alerta.textContent = "Error de conexión con el servidor";
-                alerta.classList.remove('d-none');
-                btn.disabled = false;
-                btnText.textContent = 'Iniciar Sesión';
-                btnLoading.classList.add('d-none');
+    createApp({
+        data() {
+            return {
+                step: 1, // 1: Selección, 2: Login
+                usuario: '',
+                password: '',
+                mostrarPassword: false,
+                capsLockOn: false,
+                cargando: false,
+                errorMsg: ''
             }
-        });
-    </script>
+        },
+        methods: {
+            // ===== Navegación =====
+            irACatalogo() {
+                // Redirige al catálogo público (sin login)
+                window.location.href = 'vistas/catalogo.php';
+            },
+
+            volverASeleccion() {
+                // Limpia el formulario y vuelve a la selección de rol
+                this.resetLoginForm();
+                this.step = 1;
+            },
+
+            // ===== Utilitarios de formulario =====
+            limpiarUsuario() {
+                // Elimina caracteres especiales, solo permite letras y números
+                this.usuario = this.usuario.replace(/[^a-zA-Z0-9]/g, '');
+                this.errorMsg = ''; // Limpia error al escribir
+            },
+
+            detectarCaps(event) {
+                // Detecta si Bloq Mayús está activo
+                this.capsLockOn = event.getModifierState && event.getModifierState('CapsLock');
+            },
+
+            resetLoginForm() {
+                // Deja el login como nuevo
+                this.usuario = '';
+                this.password = '';
+                this.errorMsg = '';
+                this.capsLockOn = false;
+                this.mostrarPassword = false;
+                this.cargando = false;
+            },
+
+            // ===== Autenticación =====
+            async login() {
+                if (this.password.length < 8) return;
+
+                this.cargando = true;
+                this.errorMsg = '';
+
+                try {
+                    const res = await fetch('api/login.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: this.usuario, password: this.password })
+                    });
+                    
+                    const data = await res.json();
+
+                    if (data.exito) {
+                        // Redirección inteligente según rol
+                        window.location.href = data.redirect || 'vistas/dashboard.php';
+                    } else {
+                        this.errorMsg = data.mensaje;
+                        this.cargando = false;
+                    }
+                } catch (e) {
+                    this.errorMsg = "Error de conexión con el servidor";
+                    this.cargando = false;
+                }
+            }
+        }
+    }).mount('#app')
+</script>
+
+
+<style>
+    .animate-fade { animation: fadeIn 0.4s ease-in-out; }
+</style>
+
 </body>
 </html>

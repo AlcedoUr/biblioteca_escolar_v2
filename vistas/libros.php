@@ -2,90 +2,222 @@
 
 <div id="app">
     
+    <!-- ENCABEZADO -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-bold" style="color: #8B1538;">Gestión de Libros</h3>
-            <p class="text-muted">Administre el inventario físico</p>
+            <h3 class="fw-bold" style="color: #8B1538;">Catálogo de Libros</h3>
+            <p class="text-muted">Gestión de inventario y existencias</p>
         </div>
-        <button class="btn text-white" style="background-color: #8B1538;" @click="mostrarFormulario = !mostrarFormulario">
-            <i class="bi bi-plus-lg"></i> Nuevo Libro
-        </button>
+        <div>
+            <button class="btn btn-outline-success me-2 shadow-sm" @click="abrirModalImportar">
+                <i class="bi bi-file-earmark-spreadsheet me-2"></i>Importar Excel
+            </button>
+            <button class="btn text-white shadow-sm btn-hover-gold" style="background-color: #8B1538;" @click="abrirModalNuevo">
+                <i class="bi bi-plus-lg me-2"></i>Nuevo Libro
+            </button>
+        </div>
     </div>
 
-    <div v-if="mostrarFormulario" class="card border-0 shadow mb-4 animate-fade-in">
-        <div class="card-body">
-            <h5 class="card-title text-primary mb-3">Registrar Libro</h5>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label small text-muted">Título</label>
-                    <input type="text" v-model="nuevoLibro.titulo" class="form-control">
-                </div>
+    <!-- BARRA DE HERRAMIENTAS -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <div class="row align-items-center">
+                <!-- Buscador -->
                 <div class="col-md-4">
-                    <label class="form-label small text-muted">Autor</label>
-                    <input type="text" v-model="nuevoLibro.autor" class="form-control">
+                    <div class="input-group border rounded bg-light">
+                        <span class="input-group-text bg-transparent border-0 text-muted ps-3"><i class="bi bi-search"></i></span>
+                        <input type="text" v-model="filtros.busqueda" @input="cargarLibros(1)" class="form-control border-0 bg-transparent" placeholder="Buscar título, autor o editorial...">
+                    </div>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">Stock</label>
-                    <input type="number" v-model="nuevoLibro.stock" class="form-control">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Ubicación</label>
-                    <input type="text" v-model="nuevoLibro.ubicacion" class="form-control" placeholder="Ej. E-10">
-                </div>
-                <div class="col-md-12 text-end">
-                    <button class="btn btn-secondary me-2" @click="mostrarFormulario = false">Cancelar</button>
-                    <button class="btn btn-success" @click="guardarLibro">Guardar Libro</button>
+                
+                <!-- Filtros Dinámicos (Categorías) -->
+                <div class="col-md-8 text-md-end mt-3 mt-md-0">
+                    <span class="text-muted small me-2">Categoría:</span>
+                    
+                    <!-- Botón Todo -->
+                    <button class="btn btn-sm rounded-pill me-1" 
+                            :class="filtroActivo === 'TODO' ? 'btn-dark' : 'btn-light border'" 
+                            @click="filtrar('TODO')">Todo</button>
+                    
+                    <!-- Botones Generados Dinámicamente -->
+                    <button v-for="cat in listaCategorias" 
+                            class="btn btn-sm rounded-pill me-1" 
+                            :class="filtroActivo === cat ? 'btn-dark' : 'btn-light border'" 
+                            @click="filtrar(cat)">
+                        {{ cat }}
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- TABLA DE LIBROS -->
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
-            <div class="p-3 border-bottom">
-                <div class="input-group">
-                    <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
-                    <input type="text" v-model="busqueda" class="form-control border-0" placeholder="Buscar libro...">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr class="text-muted small text-uppercase">
+                            <th class="ps-4">Libro</th>
+                            <th>Categoría</th>
+                            <th>Autor</th>
+                            <th>Editorial</th> <!-- Nueva Columna -->
+                            <th style="width: 200px;">Estado del Stock</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="libro in libros" :key="libro.id">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3 rounded bg-light text-secondary d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 55px; border: 1px solid #eee;">
+                                        <i class="bi bi-book"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">{{ libro.titulo }}</div>
+                                        <small class="text-muted">COD: LIB-{{ libro.id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">{{ libro.categoria }}</span></td>
+                            <td class="text-secondary">{{ libro.autor }}</td>
+                            <td class="text-muted small">{{ libro.editorial || '-' }}</td> <!-- Dato Editorial -->
+                            
+                            <!-- SEMÁFORO DE STOCK -->
+                            <td>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="fw-bold" :class="getColorTexto(libro)">{{ libro.stock_disponible }} disponibles</span>
+                                    <span class="text-muted">de {{ libro.stock_total }}</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar" 
+                                         :class="getColorBarra(libro)"
+                                         role="progressbar" 
+                                         :style="{ width: (libro.stock_disponible / libro.stock_total * 100) + '%' }">
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="text-end pe-4">
+                                <button @click="editar(libro)" class="btn btn-sm btn-light text-primary me-2" title="Editar"><i class="bi bi-pencil"></i></button>
+                                <button @click="eliminar(libro)" class="btn btn-sm btn-light text-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Estado Vacío -->
+                        <tr v-if="libros.length === 0">
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox display-4 d-block mb-2 opacity-25"></i>
+                                No se encontraron libros.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- PAGINACIÓN -->
+        <div class="card-footer bg-white border-top-0 py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">Página {{ pagination.current_page }} de {{ pagination.total_pages }} (Total: {{ pagination.total_items }})</small>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary me-1" 
+                            :disabled="pagination.current_page <= 1"
+                            @click="cargarLibros(pagination.current_page - 1)">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" 
+                            :disabled="pagination.current_page >= pagination.total_pages"
+                            @click="cargarLibros(pagination.current_page + 1)">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
                 </div>
             </div>
-
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
-                    <tr class="text-muted small text-uppercase">
-                        <th class="ps-4">ID</th>
-                        <th>Título</th>
-                        <th>Autor</th>
-                        <th>Ubicación</th>
-                        <th>Estado</th>
-                        <th>Stock</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="libro in librosFiltrados" :key="libro.id">
-                        <td class="ps-4 fw-bold text-secondary">#{{ libro.id }}</td>
-                        <td class="fw-semibold">{{ libro.titulo }}</td>
-                        <td class="text-muted">{{ libro.autor }}</td>
-                        <td class="small"><i class="bi bi-geo-alt"></i> {{ libro.ubicacion }}</td>
-                        
-                        <td>
-                            <span v-if="libro.stock_disponible > 0" class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
-                                Disponible
-                            </span>
-                            <span v-else class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">
-                                Agotado
-                            </span>
-                        </td>
-
-                        <td class="fw-bold">
-                            {{ libro.stock_disponible }} / {{ libro.stock_total }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
     </div>
 
-</div> </div> 
+    <!-- MODAL NUEVO/EDITAR -->
+    <div v-if="modal.visible" class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header text-white" style="background: #8B1538;">
+                    <h5 class="modal-title">{{ modal.titulo }}</h5>
+                    <button type="button" class="btn-close btn-close-white" @click="modal.visible = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">Título del Libro</label>
+                        <input type="text" v-model="libroForm.titulo" class="form-control" placeholder="Ingrese el título completo">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-muted">Autor</label>
+                            <input type="text" v-model="libroForm.autor" class="form-control" placeholder="Nombre del autor">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted">Editorial</label>
+                            <input type="text" v-model="libroForm.editorial" class="form-control" placeholder="Ej. Santillana">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-12">
+                            <label class="form-label small text-muted">Categoría</label>
+                            <!-- Input con datalist para escribir nueva o seleccionar existente -->
+                            <input type="text" list="catList" v-model="libroForm.categoria" class="form-control" placeholder="Escriba o seleccione una categoría...">
+                            <datalist id="catList">
+                                <option v-for="c in listaCategorias" :value="c"></option>
+                            </datalist>
+                        </div>
+                    </div>
+                    <div class="mb-3 bg-light p-3 rounded border">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label small text-muted fw-bold mb-0">Stock Total</label>
+                            <span class="badge bg-warning text-dark" v-if="libroForm.id">Modificar con cuidado</span>
+                        </div>
+                        <input type="number" v-model="libroForm.stock" class="form-control form-control-lg mt-2 fw-bold text-center" min="1">
+                        <small class="text-muted d-block mt-2 text-center" style="font-size: 0.75rem;">
+                            <i class="bi bi-arrow-repeat me-1"></i>
+                            El sistema recalculará automáticamente el stock disponible.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button class="btn btn-link text-secondary text-decoration-none" @click="modal.visible = false">Cancelar</button>
+                    <button class="btn text-white" style="background: #D4AF37;" @click="guardarLibro">Guardar Datos</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL IMPORTAR EXCEL -->
+    <div v-if="modalImportar" class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title">Importación Masiva</h5>
+                    <button type="button" class="btn-close" @click="modalImportar = false"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="mb-4">
+                        <i class="bi bi-file-earmark-spreadsheet display-1 text-success opacity-50"></i>
+                        <p class="mt-3 text-muted">Sube un archivo <b>CSV</b> con este orden:<br>
+                        <span class="badge bg-light text-dark border mt-2">Título, Autor, Editorial, Categoría, Stock</span></p>
+                    </div>
+                    <input type="file" ref="fileInput" class="form-control mb-3" accept=".csv">
+                    <button class="btn btn-success w-100 py-2" @click="subirArchivo">
+                        <i class="bi bi-cloud-upload me-2"></i>Procesar Archivo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div> <!-- Fin App -->
+</div> <!-- Fin Wrapper -->
+
+<style>
+    .btn-hover-gold:hover { background-color: #c4a030 !important; transform: translateY(-1px); }
+</style>
 
 <script>
     const { createApp } = Vue
@@ -93,46 +225,124 @@
     createApp({
         data() {
             return {
-                listaLibros: [],
-                mostrarFormulario: false,
-                busqueda: '',
-                nuevoLibro: { titulo: '', autor: '', ubicacion: '', stock: '' }
-            }
-        },
-        computed: {
-            librosFiltrados() {
-                return this.listaLibros.filter(l => 
-                    l.titulo.toLowerCase().includes(this.busqueda.toLowerCase()) ||
-                    l.autor.toLowerCase().includes(this.busqueda.toLowerCase())
-                );
+                libros: [],
+                filtros: { busqueda: '' },
+                filtroActivo: 'TODO',
+                listaCategorias: [], // Aquí se cargarán desde la BD
+                pagination: { current_page: 1, total_pages: 1, total_items: 0 },
+                modal: { visible: false, titulo: 'Nuevo Libro' },
+                modalImportar: false,
+                libroForm: { id: null, titulo: '', autor: '', editorial: '', categoria: '', stock: 1 }
             }
         },
         mounted() {
+            this.cargarCategorias();
             this.cargarLibros();
         },
         methods: {
-            async cargarLibros() {
-                const respuesta = await fetch('../api/libros.php');
-                this.listaLibros = await respuesta.json();
+            async cargarCategorias() {
+                const res = await fetch('../api/libros.php?get_categorias=true');
+                this.listaCategorias = await res.json();
+            },
+            async cargarLibros(page = 1) {
+                let url = `../api/libros.php?page=${page}&limit=10`;
+                
+                if(this.filtros.busqueda) {
+                    url += `&q=${this.filtros.busqueda}`;
+                }
+                
+                if(this.filtroActivo !== 'TODO') {
+                    url += `&categoria=${this.filtroActivo}`;
+                }
+
+                const res = await fetch(url);
+                const data = await res.json();
+                this.libros = data.data;
+                this.pagination = data.pagination;
+            },
+            filtrar(categoria) {
+                this.filtroActivo = categoria;
+                this.cargarLibros(1);
+            },
+            getColorBarra(libro) {
+                const pct = libro.stock_disponible / libro.stock_total;
+                if (pct < 0.2) return 'bg-danger';
+                if (pct < 0.5) return 'bg-warning';
+                return 'bg-success';
+            },
+            getColorTexto(libro) {
+                const pct = libro.stock_disponible / libro.stock_total;
+                if (pct < 0.2) return 'text-danger';
+                return 'text-dark';
+            },
+            abrirModalNuevo() {
+                // Inicializamos el formulario sin ubicación
+                this.libroForm = { id: null, titulo: '', autor: '', editorial: '', categoria: '', stock: 1 };
+                this.modal.titulo = 'Nuevo Libro';
+                this.modal.visible = true;
+            },
+            editar(libro) {
+                // Usamos spread para copiar
+                this.libroForm = { ...libro, stock: libro.stock_total }; 
+                this.modal.titulo = 'Editar Libro';
+                this.modal.visible = true;
             },
             async guardarLibro() {
-                if(!this.nuevoLibro.titulo || !this.nuevoLibro.stock) {
-                    alert("Complete los datos obligatorios");
+                if(!this.libroForm.titulo || !this.libroForm.stock) {
+                    alert("Título y Stock son obligatorios");
                     return;
                 }
-                const respuesta = await fetch('../api/libros.php', {
+
+                const res = await fetch('../api/libros.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.nuevoLibro)
+                    body: JSON.stringify(this.libroForm)
                 });
-                const dato = await respuesta.json();
-                if(dato.exito) {
-                    this.mostrarFormulario = false;
-                    this.nuevoLibro = { titulo: '', autor: '', ubicacion: '', stock: '' };
-                    this.cargarLibros(); 
+                const data = await res.json();
+                
+                if(data.exito) {
+                    this.modal.visible = false;
+                    alert('✅ Guardado correctamente');
+                    // RECARGAMOS TODO Y CATEGORIAS PARA VER LOS CAMBIOS
+                    this.cargarLibros(this.pagination.current_page);
+                    this.cargarCategorias(); 
                 } else {
-                    alert("Error: " + dato.mensaje);
+                    alert('❌ Error: ' + data.mensaje);
                 }
+            },
+            async eliminar(libro) {
+                if(!confirm(`¿Está seguro de eliminar el libro: "${libro.titulo}"?`)) return;
+                
+                const res = await fetch(`../api/libros.php?id=${libro.id}`, { method: 'DELETE' });
+                const data = await res.json();
+                
+                if(data.exito) {
+                    this.cargarLibros(this.pagination.current_page);
+                    this.cargarCategorias(); // Por si se borró la última de una categoría
+                } else {
+                    alert(data.mensaje);
+                }
+            },
+            abrirModalImportar() {
+                this.modalImportar = true;
+            },
+            async subirArchivo() {
+                const file = this.$refs.fileInput.files[0];
+                if(!file) return alert("Seleccione un archivo CSV");
+
+                const formData = new FormData();
+                formData.append('archivo_csv', file);
+
+                const res = await fetch('../api/libros.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                alert(data.mensaje);
+                
+                this.modalImportar = false;
+                this.cargarLibros();
+                this.cargarCategorias();
             }
         }
     }).mount('#app')
