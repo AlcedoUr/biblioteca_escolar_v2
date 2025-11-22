@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 22-11-2025 a las 19:13:46
+-- Tiempo de generación: 22-11-2025 a las 19:29:16
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -199,7 +199,8 @@ CREATE TABLE `reservas` (
 
 INSERT INTO `reservas` (`id`, `id_libro`, `id_usuario_solicitante`, `fecha_reserva`, `fecha_uso`, `estado`, `cantidad`, `hora_inicio`, `hora_fin`, `grado`, `seccion`) VALUES
 (1, 8, 4, '2025-11-22 12:57:27', '2025-11-23', 'PENDIENTE', 1, '07:45:00', '08:30:00', 'a', 'c'),
-(2, 6, 1, '2025-11-22 13:01:23', '2025-11-25', 'PENDIENTE', 20, '07:45:00', '10:15:00', '1', 'c');
+(2, 6, 1, '2025-11-22 13:01:23', '2025-11-25', 'PENDIENTE', 20, '07:45:00', '10:15:00', '1', 'c'),
+(3, 2, 1, '2025-11-22 13:20:10', '2025-11-24', 'PENDIENTE', 1, '07:45:00', '10:15:00', '1ro', 'F');
 
 -- --------------------------------------------------------
 
@@ -309,7 +310,7 @@ ALTER TABLE `prestamos`
 -- AUTO_INCREMENT de la tabla `reservas`
 --
 ALTER TABLE `reservas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
