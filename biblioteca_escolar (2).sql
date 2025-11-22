@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 22-11-2025 a las 18:12:35
+-- Tiempo de generación: 22-11-2025 a las 19:13:46
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -184,9 +184,22 @@ CREATE TABLE `reservas` (
   `id_libro` int(11) NOT NULL,
   `id_usuario_solicitante` int(11) NOT NULL,
   `fecha_reserva` datetime NOT NULL DEFAULT current_timestamp(),
-  `fecha_necesaria` date NOT NULL,
-  `estado` enum('PENDIENTE','APROBADA','CANCELADA','COMPLETADA') DEFAULT 'PENDIENTE'
+  `fecha_uso` date NOT NULL,
+  `estado` enum('PENDIENTE','ENTREGADA','CANCELADA','VENCIDA') DEFAULT 'PENDIENTE',
+  `cantidad` int(11) NOT NULL DEFAULT 1,
+  `hora_inicio` time NOT NULL,
+  `hora_fin` time NOT NULL,
+  `grado` varchar(20) DEFAULT NULL,
+  `seccion` varchar(10) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `reservas`
+--
+
+INSERT INTO `reservas` (`id`, `id_libro`, `id_usuario_solicitante`, `fecha_reserva`, `fecha_uso`, `estado`, `cantidad`, `hora_inicio`, `hora_fin`, `grado`, `seccion`) VALUES
+(1, 8, 4, '2025-11-22 12:57:27', '2025-11-23', 'PENDIENTE', 1, '07:45:00', '08:30:00', 'a', 'c'),
+(2, 6, 1, '2025-11-22 13:01:23', '2025-11-25', 'PENDIENTE', 20, '07:45:00', '10:15:00', '1', 'c');
 
 -- --------------------------------------------------------
 
@@ -211,7 +224,8 @@ CREATE TABLE `usuarios` (
 INSERT INTO `usuarios` (`id`, `id_persona`, `username`, `password`, `rol`, `nombre_completo`, `fecha_creacion`) VALUES
 (1, NULL, 'admin', '12345678', 'ADMINISTRADOR', 'Administrador del Sistema', '2025-11-20 09:58:04'),
 (2, NULL, 'bibliotecario', 'biblio123', 'BIBLIOTECARIO', 'Encargado de Biblioteca', '2025-11-21 00:45:38'),
-(3, NULL, 'profe1', 'profe123', 'DOCENTE', 'Profesor Juan Perez', '2025-11-21 00:45:38');
+(3, NULL, 'profe1', 'profe123', 'DOCENTE', 'Profesor Juan Perez', '2025-11-21 00:45:38'),
+(4, 1, 'groberto', '10000001', 'DOCENTE', 'Roberto Gomez Bolaños', '2025-11-22 17:39:41');
 
 --
 -- Índices para tablas volcadas
@@ -295,13 +309,13 @@ ALTER TABLE `prestamos`
 -- AUTO_INCREMENT de la tabla `reservas`
 --
 ALTER TABLE `reservas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Restricciones para tablas volcadas

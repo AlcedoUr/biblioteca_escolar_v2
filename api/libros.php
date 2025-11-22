@@ -8,7 +8,24 @@ require_once '../config/db.php';
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 
-// 0. CATEGORÍAS
+// =============================================================================
+// 0. RUTINA AUTOMÁTICA: LIMPIEZA DE RESERVAS VENCIDAS (NUEVO)
+// =============================================================================
+// Si la hora actual es mayor a la hora de inicio + 15 min de tolerancia, se vence.
+if ($metodo == 'GET') {
+    $sql_expire = "
+        UPDATE reservas 
+        SET estado = 'VENCIDA' 
+        WHERE estado = 'PENDIENTE' 
+          AND fecha_uso <= CURDATE() 
+          AND ADDTIME(hora_inicio, '00:15:00') < CURTIME()
+    ";
+    $conn->query($sql_expire);
+}
+
+// =============================================================================
+// 1. OBTENER CATEGORÍAS (MANTENIDO)
+// =============================================================================
 if ($metodo == 'GET' && isset($_GET['get_categorias'])) {
     $sql = "SELECT DISTINCT categoria FROM libros WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria ASC";
     $res = $conn->query($sql);
@@ -18,7 +35,9 @@ if ($metodo == 'GET' && isset($_GET['get_categorias'])) {
     exit;
 }
 
-// 1. LISTAR (GET)
+// =============================================================================
+// 2. LISTAR LIBROS CON CÁLCULO DE RESERVAS (MEJORADO)
+// =============================================================================
 if ($metodo == 'GET') {
     $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
@@ -42,15 +61,49 @@ if ($metodo == 'GET') {
         $where .= " AND categoria = '$categoria_filtro'";
     }
 
+    // Contar total
     $sql_count = "SELECT COUNT(*) as total FROM libros $where";
     $total_items = $conn->query($sql_count)->fetch_assoc()['total'];
     $total_pages = ceil($total_items / $limit);
 
-    $sql = "SELECT * FROM libros $where ORDER BY $sort $order LIMIT $limit OFFSET $offset";
+    // Consulta Principal con Subconsulta para Reservas de HOY
+    $sql = "
+        SELECT 
+            l.*,
+            (
+                SELECT COALESCE(SUM(cantidad), 0) 
+                FROM reservas 
+                WHERE id_libro = l.id 
+                  AND estado = 'PENDIENTE' 
+                  AND fecha_uso = CURDATE()
+            ) as reservados_hoy
+        FROM libros l
+        $where 
+        ORDER BY $sort $order 
+        LIMIT $limit OFFSET $offset
+    ";
+
     $resultado = $conn->query($sql);
-    
     $libros = [];
+    
     while($row = $resultado->fetch_assoc()) {
+        // CÁLCULO DE DISPONIBILIDAD REAL
+        // Stock Físico (en estantería)
+        $stock_fisico = (int)$row['stock_disponible'];
+        // Reservados para hoy (que aún no se han entregado)
+        $reservados_hoy = (int)$row['reservados_hoy'];
+        
+        // El disponible real para NUEVOS préstamos/reservas hoy
+        $disponible_real = max(0, $stock_fisico - $reservados_hoy);
+        
+        // Inyectamos los datos calculados
+        $row['stock_disponible_real'] = $disponible_real; // Para mostrar al usuario
+        $row['stock_disponible_fisico'] = $stock_fisico;  // Para administración interna
+        
+        // Sobreescribimos 'stock_disponible' para que las vistas que usan ese campo
+        // muestren automáticamente el valor protegido (restando reservas)
+        $row['stock_disponible'] = $disponible_real; 
+
         $libros[] = $row;
     }
 
@@ -65,7 +118,9 @@ if ($metodo == 'GET') {
     exit;
 }
 
-// 2. GUARDAR (POST) - CON TRY-CATCH
+// =============================================================================
+// 3. GUARDAR (POST) - (MANTENIDO INTEGRO)
+// =============================================================================
 if ($metodo == 'POST') {
     try {
         // A. Importación CSV
@@ -145,7 +200,9 @@ if ($metodo == 'POST') {
     exit;
 }
 
-// 3. ELIMINAR (DELETE)
+// =============================================================================
+// 4. ELIMINAR (DELETE) - (MANTENIDO INTEGRO)
+// =============================================================================
 if ($metodo == 'DELETE') {
     try {
         $id = $_GET['id'] ?? 0;

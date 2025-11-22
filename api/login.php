@@ -13,12 +13,26 @@ if (empty($user) || empty($pass)) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT id, password, rol, nombre_completo FROM usuarios WHERE username = ? LIMIT 1");
+// CONSULTA ACTUALIZADA: Ahora hacemos JOIN con personas para verificar el estado
+$sql = "SELECT u.id, u.password, u.rol, u.nombre_completo, p.estado_biblioteca 
+        FROM usuarios u 
+        LEFT JOIN personas p ON u.id_persona = p.id 
+        WHERE u.username = ? LIMIT 1";
+
+$stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $user);
 $stmt->execute();
 $resultado = $stmt->get_result();
 
 if ($row = $resultado->fetch_assoc()) {
+    
+    // 1. VERIFICAR BLOQUEO
+    if ($row['estado_biblioteca'] === 'BLOQUEADO') {
+        echo json_encode(['exito' => false, 'mensaje' => 'Acceso denegado: Usuario bloqueado por administración.']);
+        exit;
+    }
+
+    // 2. VERIFICAR PASSWORD
     $password_valida = password_verify($pass, $row['password']) || $pass === $row['password'];
 
     if ($password_valida) {
@@ -27,22 +41,15 @@ if ($row = $resultado->fetch_assoc()) {
         $_SESSION['user_rol'] = $row['rol'];
         $_SESSION['user_nombre'] = $row['nombre_completo'];
         
-        // --- REDIRECCIÓN SEGÚN ROL ---
-        $destino = 'vistas/dashboard.php'; // Default Admin
-        
+        $destino = 'vistas/dashboard.php'; 
         if ($row['rol'] == 'ESTUDIANTE') {
-            // Estudiante va directo a su única vista
             $destino = 'vistas/biblioteca_virtual.php'; 
         } 
         else if ($row['rol'] == 'DOCENTE') {
-            // Docente va al catálogo o reservas
             $destino = 'vistas/catalogo.php'; 
         }
 
-        echo json_encode([
-            'exito' => true, 
-            'redirect' => $destino
-        ]);
+        echo json_encode(['exito' => true, 'redirect' => $destino]);
     } else {
         echo json_encode(['exito' => false, 'mensaje' => 'Contraseña incorrecta']);
     }
