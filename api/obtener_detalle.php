@@ -9,7 +9,8 @@ if ($id_prestamo == 0) {
     exit;
 }
 
-// 1. Obtener Datos del Préstamo (Cabecera) y Usuario
+// 1. Obtener Datos del Préstamo Actual (Cabecera) y Usuario
+// ... (Esta parte se mantiene IGUAL que tu código original) ...
 $sql_head = "
     SELECT 
         p.id, 
@@ -29,56 +30,43 @@ $sql_head = "
 $res_head = $conn->query($sql_head);
 $datos_prestamo = $res_head->fetch_assoc();
 
-// Procesar Ubicación y Hora desde Observaciones
+// ... (Lógica de procesamiento de ubicación y hora se mantiene IGUAL) ...
+// ... (Copia el bloque de "Procesar Ubicación y Hora" de tu archivo original aquí) ...
 $ubicacion_texto = "Uso Personal / Domicilio";
-$hora_limite = ""; // Vacio por defecto
+$hora_limite = "";
 
 if ($datos_prestamo) {
-    // Si es estudiante, por defecto su ubicación es su salón
     if ($datos_prestamo['tipo'] == 'ESTUDIANTE') {
         $ubicacion_texto = $datos_prestamo['grado'] . ' "' . $datos_prestamo['seccion'] . '"';
     }
-
-    // Si hay datos de Aula en observaciones, eso tiene prioridad (para docentes)
-    // Buscamos 'Destino: Aula' o 'Tipo: En Aula'
     if (strpos($datos_prestamo['observaciones'], 'Destino: Aula') !== false) {
         $parts = explode('|', $datos_prestamo['observaciones']);
         foreach($parts as $parte) {
             if(strpos($parte, 'Destino: Aula') !== false) {
-                $ubicacion_texto = trim(str_replace('Destino: Aula', '', $parte));
+                $ubicacion_texto = "Aula " . trim(str_replace('Destino: Aula', '', $parte));
                 $ubicacion_texto = str_replace('"', '', $ubicacion_texto);
-                // Agregamos prefijo para que se entienda
-                $ubicacion_texto = "Aula " . $ubicacion_texto;
             }
         }
     }
-    
-    // Extraer hora límite si existe en las observaciones
     if (strpos($datos_prestamo['observaciones'], 'Devolución límite') !== false) {
         $parts = explode('|', $datos_prestamo['observaciones']);
         foreach($parts as $parte) {
             if(strpos($parte, 'Devolución límite') !== false) {
-                // Formato esperado: "Devolución límite hoy a las: 13:05"
                 $subparts = explode(' a las: ', $parte);
-                if (isset($subparts[1])) {
-                    $hora_limite = trim($subparts[1]);
-                }
+                if (isset($subparts[1])) $hora_limite = trim($subparts[1]);
             }
         }
     }
-    
-    // Guardamos los datos procesados en el array para enviarlos al frontend
     $datos_prestamo['ubicacion_final'] = $ubicacion_texto;
     $datos_prestamo['hora_limite'] = $hora_limite;
 }
 
-// 2. Traer los libros de ESTE préstamo
+// 2. Traer los libros de ESTE préstamo (IGUAL)
 $sql_detalles = "
     SELECT 
         dp.id as id_detalle,
         l.titulo,
         l.id as id_libro,
-        l.imagen_portada,
         dp.cantidad,
         dp.estado_devolucion
     FROM detalle_prestamo dp
@@ -95,33 +83,59 @@ while($row = $res_detalles->fetch_assoc()) {
     $detalles[] = $row;
 }
 
-// 3. Traer historial de DEUDAS (Otros préstamos)
-$historial_pendientes = [];
+// ==================================================================
+// 3. NUEVA LÓGICA: Traer historial AGRUPADO por Préstamo
+// ==================================================================
+$historial_agrupado = []; // Array final
+
 if ($datos_prestamo) {
     $id_persona = $datos_prestamo['id_persona_solicitante'];
+    
     $sql_historial = "
         SELECT 
+            p.id as id_prestamo,
+            DATE_FORMAT(p.fecha_prestamo, '%d/%m/%Y %H:%i') as fecha,
             l.titulo,
-            dp.cantidad,
-            DATE_FORMAT(p.fecha_prestamo, '%d/%m/%Y') as fecha,
-            p.id as id_otro_prestamo
+            dp.cantidad
         FROM detalle_prestamo dp
         JOIN prestamos p ON dp.id_prestamo = p.id
         JOIN libros l ON dp.id_libro = l.id
         WHERE p.id_persona_solicitante = $id_persona
           AND dp.estado_devolucion = 'PENDIENTE'
           AND p.id != $id_prestamo
-        ORDER BY p.fecha_prestamo ASC
+        ORDER BY p.fecha_prestamo DESC
     ";
+    
     $res_hist = $conn->query($sql_historial);
+    
+    // Procesamiento para agrupar
+    $temp_grupos = [];
     while($row = $res_hist->fetch_assoc()) {
-        $historial_pendientes[] = $row;
+        $pid = $row['id_prestamo'];
+        
+        // Si no existe el grupo, crearlo
+        if (!isset($temp_grupos[$pid])) {
+            $temp_grupos[$pid] = [
+                'id_prestamo' => $pid,
+                'fecha' => $row['fecha'],
+                'libros' => []
+            ];
+        }
+        
+        // Agregar el libro al grupo
+        $temp_grupos[$pid]['libros'][] = [
+            'titulo' => $row['titulo'],
+            'cantidad' => $row['cantidad']
+        ];
     }
+    
+    // Reindexar array (quitar claves numéricas asociativas) para JSON limpio
+    $historial_agrupado = array_values($temp_grupos);
 }
 
 echo json_encode([
     'cabecera' => $datos_prestamo,
     'detalles' => $detalles,
-    'otros_pendientes' => $historial_pendientes
+    'otros_pendientes' => $historial_agrupado // Ahora enviamos la estructura agrupada
 ]);
 ?>
