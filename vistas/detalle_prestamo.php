@@ -60,51 +60,28 @@ $id_prestamo = $_GET['id'] ?? 0;
                             </div>
                         </div>
                     </div>
-
-                    <div class="d-flex justify-content-between align-items-center border-top pt-3">
-                        <span class="text-muted small">Estado Actual:</span>
-                        <span class="badge bg-warning text-dark border border-warning" v-if="pendientes > 0">En Proceso</span>
-                        <span class="badge bg-success" v-else>Finalizado</span>
-                    </div>
-
+                    
                     <div v-if="otros_pendientes.length > 0" class="mt-4 pt-4 border-top">
                         <div class="d-flex align-items-center mb-3 text-danger">
                             <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
                             <h6 class="fw-bold mb-0">Otras deudas pendientes</h6>
                         </div>
-
                         <div class="d-flex flex-column gap-3">
                             <div v-for="prestamo in otros_pendientes" :key="prestamo.id_prestamo" class="card border-danger border-opacity-25 shadow-sm bg-danger bg-opacity-10">
                                 <div class="card-body p-3">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <div>
-                                            <div class="fw-bold text-danger">
-                                                <i class="bi bi-collection me-1"></i> Préstamo #{{ prestamo.id_prestamo }}
-                                            </div>
-                                            <small class="text-muted">
-                                                <i class="bi bi-calendar-week me-1"></i> {{ prestamo.fecha }}
-                                            </small>
-                                        </div>
-                                    </div>
+                                    <div class="fw-bold text-danger mb-2"><i class="bi bi-collection me-1"></i> Préstamo #{{ prestamo.id_prestamo }}</div>
                                     <ul class="list-unstyled mb-3 ps-2 border-start border-danger border-2 border-opacity-25">
                                         <li v-for="(libro, idx) in prestamo.libros" :key="idx" class="mb-1 small text-dark">
-                                            <i class="bi bi-book-half text-danger opacity-50 me-2"></i>
-                                            {{ libro.titulo }} <span v-if="libro.cantidad > 1" class="fw-bold">({{ libro.cantidad }})</span>
+                                            • {{ libro.titulo }} <span v-if="libro.cantidad > 1" class="fw-bold">({{ libro.cantidad }})</span>
                                         </li>
                                     </ul>
-                                    <div class="d-grid gap-2">
-                                        <a :href="'detalle_prestamo.php?id=' + prestamo.id_prestamo" class="btn btn-sm btn-danger text-white fw-bold shadow-sm">
-                                            <i class="bi bi-box-arrow-in-down me-2"></i>Gestionar Devolución
-                                        </a>
+                                    <div class="d-grid">
+                                        <a :href="'detalle_prestamo.php?id=' + prestamo.id_prestamo" class="btn btn-sm btn-danger text-white fw-bold">Gestionar</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div v-else class="mt-4 pt-3 border-top text-center text-success small animate-fade">
-                        <i class="bi bi-check-circle-fill me-1"></i> Sin otras deudas pendientes.
-                    </div>
-
                 </div>
             </div>
         </div>
@@ -112,7 +89,7 @@ $id_prestamo = $_GET['id'] ?? 0;
         <div class="col-md-8">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom pt-3 pb-2 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold text-dark mb-0">Items a Devolver (Préstamo #{{ idPrestamo }})</h6>
+                    <h6 class="fw-bold text-dark mb-0">Items a Devolver</h6>
                     <span class="badge bg-light text-dark border">{{ totalLibros }} libros en total</span>
                 </div>
                 <div class="card-body p-0">
@@ -144,25 +121,17 @@ $id_prestamo = $_GET['id'] ?? 0;
                                     </td>
                                     
                                     <td>
-                                        <span v-if="d.estado_devolucion == 'PENDIENTE'" class="badge bg-warning bg-opacity-10 text-dark border border-warning px-3 rounded-pill">
-                                            Pendiente
-                                        </span>
-                                        <span v-else-if="d.estado_devolucion == 'BUENO'" class="badge bg-success bg-opacity-10 text-success border border-success px-3 rounded-pill">
-                                            <i class="bi bi-check-circle me-1"></i> Devuelto OK
-                                        </span>
-                                        <span v-else-if="d.estado_devolucion == 'DAÑADO'" class="badge bg-warning text-dark px-3 rounded-pill">
-                                            <i class="bi bi-exclamation-triangle me-1"></i> Dañado
-                                        </span>
-                                        <span v-else class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 rounded-pill">
-                                            <i class="bi bi-x-circle me-1"></i> Perdido
-                                        </span>
+                                        <span v-if="d.estado_devolucion == 'PENDIENTE'" class="badge bg-warning bg-opacity-10 text-dark border border-warning px-3 rounded-pill">Pendiente</span>
+                                        <span v-else-if="d.estado_devolucion == 'BUENO'" class="badge bg-success bg-opacity-10 text-success border border-success px-3 rounded-pill"><i class="bi bi-check-circle me-1"></i> OK</span>
+                                        <span v-else-if="d.estado_devolucion == 'DAÑADO'" class="badge bg-warning text-dark px-3 rounded-pill"><i class="bi bi-exclamation-triangle me-1"></i> Dañado</span>
+                                        <span v-else class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 rounded-pill"><i class="bi bi-x-circle me-1"></i> Perdido</span>
                                     </td>
 
                                     <td class="text-end pe-4">
                                         <div v-if="d.estado_devolucion == 'PENDIENTE'">
                                             <div class="btn-group shadow-sm" role="group">
                                                 <button @click="procesar(d, 'BUENO')" class="btn btn-sm btn-success text-white fw-bold px-3" title="Devolver en buen estado">
-                                                    <i class="bi bi-check-lg me-1"></i> OK
+                                                    <i class="bi bi-check-lg"></i>
                                                 </button>
                                                 <button @click="procesar(d, 'DAÑADO')" class="btn btn-sm btn-warning text-dark fw-bold px-3" title="Reportar daño">
                                                     <i class="bi bi-bandaid"></i>
@@ -181,25 +150,14 @@ $id_prestamo = $_GET['id'] ?? 0;
                         </table>
                     </div>
                 </div>
-                
                 <div class="card-footer bg-white text-center py-4 animate-fade" v-if="pendientes === 0">
-                    <div class="text-success mb-2">
-                        <i class="bi bi-check-circle-fill display-4"></i>
-                    </div>
+                    <div class="text-success mb-2"><i class="bi bi-check-circle-fill display-4"></i></div>
                     <h5 class="fw-bold text-dark">¡Préstamo Finalizado!</h5>
-                    <p class="text-muted small">Todos los libros han sido procesados correctamente.</p>
                     <a href="historial.php" class="btn btn-outline-success rounded-pill px-4">Volver al Historial</a>
                 </div>
             </div>
         </div>
-
     </div>
-
-    <div v-else class="text-center py-5">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2 text-muted">Cargando detalles...</p>
-    </div>
-
 </div>
 
 <style>
@@ -208,7 +166,7 @@ $id_prestamo = $_GET['id'] ?? 0;
 </style>
 
 <script>
-    const { createApp } = Vue
+    const { createApp, nextTick } = Vue
 
     createApp({
         data() {
@@ -216,78 +174,181 @@ $id_prestamo = $_GET['id'] ?? 0;
                 idPrestamo: <?php echo $id_prestamo; ?>,
                 detalles: [],
                 cabecera: {}, 
-                otros_pendientes: [] 
+                otros_pendientes: [],
+                listaPersonas: [] 
             }
         },
         computed: {
-            pendientes() {
-                return this.detalles.filter(d => d.estado_devolucion === 'PENDIENTE').length;
-            },
-            totalLibros() {
-                return this.detalles.reduce((acc, item) => acc + parseInt(item.cantidad), 0);
-            }
+            pendientes() { return this.detalles.filter(d => d.estado_devolucion === 'PENDIENTE').length; },
+            totalLibros() { return this.detalles.reduce((acc, item) => acc + parseInt(item.cantidad), 0); }
         },
-        mounted() {
+        mounted() { 
             this.cargarDetalles();
+            this.cargarPersonas(); 
         },
         methods: {
             async cargarDetalles() {
                 try {
                     const res = await fetch(`../api/obtener_detalle.php?id=${this.idPrestamo}`);
                     const data = await res.json();
-                    
                     this.detalles = data.detalles;
-                    this.cabecera = data.cabecera || { 
-                        nombre: 'Desconocido', 
-                        dni: '-', 
-                        tipo: '-', 
-                        ubicacion_final: 'No especificada', 
-                        fecha_fin: '-',
-                        hora_limite: null 
-                    };
+                    this.cabecera = data.cabecera || { nombre: '...', dni: '-', tipo: '-', ubicacion_final: '-', fecha_fin: '-' };
                     this.otros_pendientes = data.otros_pendientes || [];
-                    
                 } catch(e) { console.error("Error:", e); }
             },
+            
+            async cargarPersonas() {
+                try {
+                    const res = await fetch('../api/personas.php');
+                    this.listaPersonas = await res.json();
+                } catch(e) { console.error(e); }
+            },
+            
             async procesar(item, estado) {
-                // --- CONFIGURACIÓN DE SWEETALERT SEGÚN ESTADO ---
-                let titulo = '¿Confirmar devolución?';
-                let texto = `Se marcará "${item.titulo}" como devuelto en buen estado.`;
-                let icono = 'question';
-                let colorBtn = '#198754'; // Verde
-                
+                let cantidadAProcesar = item.cantidad; 
+                let idCausanteSeleccionado = null;
+
+                // CONFIGURACIÓN VISUAL
+                let tituloAlerta = 'Confirmar Devolución';
+                let iconoAlerta = 'question';
+                let colorBtn = '#198754'; 
+
                 if (estado === 'DAÑADO') {
-                    titulo = '¿Reportar Daño?';
-                    texto = `El libro "${item.titulo}" se marcará como DAÑADO. \n⚠️ No volverá al stock disponible.`;
-                    icono = 'warning';
-                    colorBtn = '#ffc107'; // Amarillo
-                }
-                if (estado === 'PERDIDO') {
-                    titulo = '¿Reportar Pérdida?';
-                    texto = `El libro "${item.titulo}" se marcará como PERDIDO. \n⛔ Se dará de baja del inventario.`;
-                    icono = 'error';
-                    colorBtn = '#dc3545'; // Rojo
+                    tituloAlerta = 'Reportar Daño';
+                    iconoAlerta = 'warning';
+                    colorBtn = '#ffc107'; 
+                } else if (estado === 'PERDIDO') {
+                    tituloAlerta = 'Reportar Pérdida';
+                    iconoAlerta = 'error';
+                    colorBtn = '#dc3545'; 
                 }
 
-                // 1. ALERTA DE CONFIRMACIÓN
-                const result = await Swal.fire({
-                    title: titulo,
-                    text: texto,
-                    icon: icono,
-                    showCancelButton: true,
-                    confirmButtonColor: colorBtn,
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Sí, procesar',
-                    cancelButtonText: 'Cancelar'
-                });
+                // === LÓGICA DE INCIDENCIA CON BUSCADOR INTEGRADO ===
+                if (estado === 'DAÑADO' || estado === 'PERDIDO') {
+                    
+                    // Creamos las opciones limpias (Solo Nombre y Apellido)
+                    let opcionesHTML = this.listaPersonas
+                        .map(p => `<option value="${p.id}">${p.apellidos}, ${p.nombres}</option>`)
+                        .join('');
 
-                if (!result.isConfirmed) return;
+                    const { value: formValues } = await Swal.fire({
+                        title: tituloAlerta,
+                        icon: iconoAlerta,
+                        // HTML CON BUSCADOR Y LISTA
+                        html: `
+                            <div class="text-start small mb-3 text-muted">
+                                Se registrará como <b>${estado}</b>. Indique cantidad y responsable.
+                            </div>
+                            
+                            ${item.cantidad > 1 ? `
+                            <div class="mb-3 text-start">
+                                <label class="form-label fw-bold small">Cantidad afectada:</label>
+                                <input id="swal-input-cant" type="number" class="form-control text-center fw-bold" min="1" max="${item.cantidad}" value="${item.cantidad}">
+                            </div>
+                            ` : '<input id="swal-input-cant" type="hidden" value="1">'}
 
+                            <div class="form-check border p-2 rounded bg-light mb-3 text-start">
+                                <input class="form-check-input ms-1" type="checkbox" id="swal-check-resp" checked onchange="
+                                    document.getElementById('div-select-causante').style.display = this.checked ? 'none' : 'block';
+                                    if(!this.checked) setTimeout(() => document.getElementById('swal-search-input').focus(), 100);
+                                ">
+                                <label class="form-check-label fw-bold ms-2" for="swal-check-resp">
+                                    Responsable: Solicitante original
+                                    <div class="text-muted small fw-normal ps-1">(${this.cabecera.nombre})</div>
+                                </label>
+                            </div>
+
+                            <div id="div-select-causante" style="display:none;" class="text-start">
+                                <label class="form-label fw-bold small text-danger">Buscar causante real:</label>
+                                
+                                <div class="input-group input-group-sm mb-1">
+                                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="swal-search-input" class="form-control" placeholder="Escriba para filtrar...">
+                                </div>
+                                
+                                <select id="swal-input-causante" class="form-select form-select-sm" size="4">
+                                    ${opcionesHTML}
+                                </select>
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonColor: colorBtn,
+                        confirmButtonText: 'Registrar Incidencia',
+                        cancelButtonText: 'Cancelar',
+                        didOpen: () => {
+                            // LÓGICA DE FILTRADO EN TIEMPO REAL
+                            const inputSearch = Swal.getPopup().querySelector('#swal-search-input');
+                            const selectBox = Swal.getPopup().querySelector('#swal-input-causante');
+                            const originalOptions = Array.from(selectBox.options); // Copia de seguridad
+
+                            inputSearch.addEventListener('input', (e) => {
+                                const term = e.target.value.toLowerCase();
+                                selectBox.innerHTML = ''; // Limpiar
+                                
+                                const filtrados = originalOptions.filter(opt => opt.text.toLowerCase().includes(term));
+                                
+                                if(filtrados.length > 0) {
+                                    filtrados.forEach(opt => selectBox.add(opt));
+                                } else {
+                                    // Opción vacía si no hay resultados
+                                    let opt = document.createElement('option');
+                                    opt.text = "No encontrado...";
+                                    opt.disabled = true;
+                                    selectBox.add(opt);
+                                }
+                            });
+                        },
+                        preConfirm: () => {
+                            return {
+                                cantidad: document.getElementById('swal-input-cant').value,
+                                esSolicitante: document.getElementById('swal-check-resp').checked,
+                                idCausante: document.getElementById('swal-input-causante').value
+                            }
+                        }
+                    });
+
+                    if (!formValues) return; 
+
+                    cantidadAProcesar = parseInt(formValues.cantidad);
+                    
+                    if (cantidadAProcesar > item.cantidad || cantidadAProcesar < 1) {
+                        return Swal.fire('Error', 'Cantidad inválida', 'error');
+                    }
+
+                    if (!formValues.esSolicitante) {
+                        if (!formValues.idCausante) return Swal.fire('Atención', 'Debe seleccionar un nombre de la lista.', 'warning');
+                        idCausanteSeleccionado = formValues.idCausante;
+                    }
+
+                } else {
+                    // --- CASO BUENO (Flujo Normal) ---
+                    if (item.cantidad > 1) {
+                        const { value: cant } = await Swal.fire({
+                            title: 'Confirmar Devolución',
+                            text: `Devolver ${item.cantidad} libros. ¿Cuántos están OK?`,
+                            input: 'number',
+                            inputValue: item.cantidad,
+                            inputAttributes: { min: 1, max: item.cantidad },
+                            showCancelButton: true,
+                            confirmButtonColor: colorBtn,
+                            confirmButtonText: 'Confirmar'
+                        });
+                        if (!cant) return;
+                        cantidadAProcesar = parseInt(cant);
+                    } else {
+                        const res = await Swal.fire({ title: 'Confirmar', text: 'Marcar libro como devuelto en buen estado', icon: 'question', showCancelButton: true, confirmButtonColor: colorBtn });
+                        if (!res.isConfirmed) return;
+                    }
+                }
+
+                // ENVÍO AL BACKEND
                 const datos = {
                     id_detalle: item.id_detalle,
                     id_libro: item.id_libro,
-                    cantidad: item.cantidad,
-                    estado: estado
+                    cantidad_total: item.cantidad,
+                    cantidad_procesar: cantidadAProcesar,
+                    estado: estado,
+                    id_causante: idCausanteSeleccionado
                 };
 
                 try {
@@ -299,17 +360,7 @@ $id_prestamo = $_GET['id'] ?? 0;
                     const r = await res.json();
                     
                     if (r.exito) {
-                        // 2. FEEDBACK DE ÉXITO
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Procesado',
-                            text: 'El estado del libro ha sido actualizado.',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                        
-                        // Actualización optimista y recarga
-                        item.estado_devolucion = estado;
+                        Swal.fire({ icon: 'success', title: 'Procesado', text: 'Estado actualizado correctamente', timer: 1200, showConfirmButton: false });
                         this.cargarDetalles(); 
                     } else {
                         Swal.fire('Error', r.mensaje, 'error');
