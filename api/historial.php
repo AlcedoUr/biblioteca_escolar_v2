@@ -33,27 +33,27 @@ while($row = $resultado->fetch_assoc()) {
     $row['fecha_devolucion_pactada'] = date("d/m/Y", strtotime($row['fecha_devolucion_pactada']));
     
     // 1. Extraer Aula
+    $row['aula_info'] = null;
     if (strpos($row['observaciones'], 'Destino: Aula') !== false) {
         $partes = explode('|', $row['observaciones']);
         foreach($partes as $parte) {
             if(strpos($parte, 'Destino: Aula') !== false) {
-                $row['aula_info'] = trim(str_replace('Destino: Aula', '', $parte));
-                $row['aula_info'] = str_replace('"', '', $row['aula_info']);
+                $texto = trim(str_replace('Destino: Aula', '', $parte));
+                $row['aula_info'] = str_replace('"', '', $texto);
             }
         }
     }
-    if(empty($row['aula_info'])) $row['aula_info'] = null;
 
-    // 2. Extraer Hora Límite (NUEVO)
+    // 2. Extraer Hora Límite (CRUCIAL PARA VALIDAR)
     $row['hora_limite'] = null;
     if (strpos($row['observaciones'], 'Devolución límite') !== false) {
         $partes = explode('|', $row['observaciones']);
         foreach($partes as $parte) {
-            if(strpos($parte, 'Devolución límite') !== false) {
-                // Formato: "Devolución límite hoy a las: 13:05"
-                $time_part = explode(' a las: ', $parte);
-                if(isset($time_part[1])) {
-                    $row['hora_limite'] = trim($time_part[1]);
+            // Formato en DB: "Devolución límite... a las: HH:mm"
+            if(strpos($parte, 'Devolución límite') !== false && strpos($parte, ' a las: ') !== false) {
+                $sub = explode(' a las: ', $parte);
+                if(isset($sub[1])) {
+                    $row['hora_limite'] = trim($sub[1]);
                 }
             }
         }

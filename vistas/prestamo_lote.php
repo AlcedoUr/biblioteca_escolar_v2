@@ -2,41 +2,41 @@
 
 <div id="app">
     
-    <!-- ENCABEZADO -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <!-- ENCABEZADO CON NAVEGACIÓN -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-bold mb-0" style="color: #8B1538;">Nuevo Préstamo</h4>
+            <h3 class="fw-bold" style="color: #8B1538;">Nuevo Préstamo</h3>
             <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0 small">
+                <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="historial.php" class="text-decoration-none text-muted">Gestión</a></li>
                     <li class="breadcrumb-item active text-dark fw-bold">Solicitud</li>
                 </ol>
             </nav>
         </div>
-        <a href="historial.php" class="btn btn-light border text-muted shadow-sm btn-sm">
-            <i class="bi bi-x-lg me-1"></i> Cancelar
+        <a href="historial.php" class="btn btn-light border text-muted shadow-sm">
+            <i class="bi bi-x-lg me-2"></i> Cancelar
         </a>
     </div>
 
-    <div class="row g-3">
+    <div class="row g-4">
         
         <!-- COLUMNA IZQUIERDA: BÚSQUEDAS -->
         <div class="col-md-8">
             
             <!-- 1. BUSCADOR DE SOLICITANTE -->
-            <div class="card border-0 shadow-sm mb-3">
-                <div class="card-header bg-white border-0 pt-3 px-3 pb-0">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
                     <div class="d-flex align-items-center mb-1">
                         <span class="badge bg-secondary bg-opacity-10 text-secondary me-2">PASO 1</span>
                         <h6 class="fw-bold mb-0 text-dark">Buscar Solicitante</h6>
                     </div>
                 </div>
-                <div class="card-body px-3 pb-3">
+                <div class="card-body px-4 pb-4">
                     <div class="position-relative">
                         <div class="input-group input-group-lg border rounded bg-white">
                             <span class="input-group-text bg-transparent border-0 text-muted ps-3"><i class="bi bi-search"></i></span>
                             <input type="text" 
-                                   class="form-control border-0 shadow-none fs-6" 
+                                   class="form-control border-0 shadow-none" 
                                    placeholder="Escriba nombre, apellido o DNI..." 
                                    v-model="filtroPersona"
                                    @focus="mostrarListaPersonas = true"
@@ -47,27 +47,40 @@
                             </button>
                         </div>
 
+                        <!-- Lista Flotante -->
                         <div v-if="mostrarListaPersonas && personasFiltradas.length > 0 && !personaSeleccionada" 
                              class="list-group position-absolute w-100 shadow-lg mt-1 overflow-auto custom-scrollbar" 
-                             style="z-index: 1000; max-height: 250px; border-radius: 8px; border: 1px solid #eee;">
-                            <button type="button" class="list-group-item list-group-item-action p-2 border-start-0 border-end-0" 
-                                    v-for="p in personasFiltradas" @click="seleccionarPersona(p)">
+                             style="z-index: 1000; max-height: 300px; border-radius: 8px; border: 1px solid #eee;">
+                            
+                            <button type="button" 
+                                    class="list-group-item list-group-item-action p-3 border-start-0 border-end-0" 
+                                    v-for="p in personasFiltradas" 
+                                    @click="seleccionarPersona(p)">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <div class="fw-bold text-dark small">{{ p.apellidos }}, {{ p.nombres }}</div>
-                                        <div class="text-muted" style="font-size: 0.7rem;">{{ p.dni }} <span v-if="p.grado">• {{ p.grado }} "{{ p.seccion }}"</span></div>
+                                        <div class="fw-bold text-dark">{{ p.apellidos }}, {{ p.nombres }}</div>
+                                        <div class="small text-muted d-flex gap-2">
+                                            <span><i class="bi bi-card-heading me-1"></i>{{ p.dni }}</span>
+                                            <span v-if="p.grado">• {{ p.grado }} "{{ p.seccion }}"</span>
+                                        </div>
                                     </div>
-                                    <span class="badge rounded-pill" :class="p.tipo == 'ESTUDIANTE' ? 'bg-primary bg-opacity-10 text-primary' : 'bg-success bg-opacity-10 text-success'">{{ p.tipo }}</span>
+                                    <span class="badge rounded-pill" 
+                                          :class="p.tipo == 'ESTUDIANTE' ? 'bg-primary bg-opacity-10 text-primary' : 'bg-success bg-opacity-10 text-success'">
+                                        {{ p.tipo }}
+                                    </span>
                                 </div>
                             </button>
                         </div>
                     </div>
 
-                    <div v-if="personaSeleccionada" class="mt-2 p-2 rounded d-flex align-items-center animate-fade-in" style="background-color: #e8f5e9; border: 1px solid #c8e6c9;">
-                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 35px; height: 35px;"><i class="bi bi-person-check-fill fs-5"></i></div>
+                    <!-- Usuario Seleccionado -->
+                    <div v-if="personaSeleccionada" class="mt-3 p-3 rounded d-flex align-items-center animate-fade-in" style="background-color: #e8f5e9; border: 1px solid #c8e6c9;">
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px;">
+                            <i class="bi bi-person-check-fill fs-4"></i>
+                        </div>
                         <div>
-                            <h6 class="mb-0 fw-bold text-success small">{{ personaSeleccionada.apellidos }}, {{ personaSeleccionada.nombres }}</h6>
-                            <div class="text-success text-opacity-75" style="font-size: 0.7rem;">
+                            <h6 class="mb-0 fw-bold text-success">{{ personaSeleccionada.apellidos }}, {{ personaSeleccionada.nombres }}</h6>
+                            <div class="small text-success text-opacity-75">
                                 <span class="fw-bold">{{ personaSeleccionada.tipo }}</span> 
                                 <span v-if="personaSeleccionada.grado">• {{ personaSeleccionada.grado }} "{{ personaSeleccionada.seccion }}"</span>
                                 <span v-if="personaSeleccionada.especialidad">• {{ personaSeleccionada.especialidad }}</span>
@@ -75,110 +88,160 @@
                         </div>
                     </div>
                     
-                    <div v-if="personaSeleccionada && personaSeleccionada.tipo == 'DOCENTE'" class="mt-2 animate-fade-in">
-                        <div class="bg-light p-2 rounded border">
-                            <label class="form-label small fw-bold text-muted mb-1" style="font-size: 0.7rem;"><i class="bi bi-easel me-1"></i> ¿Para qué aula es?</label>
+                    <!-- SELECCIÓN DE SALÓN PARA DOCENTES -->
+                    <div v-if="personaSeleccionada && personaSeleccionada.tipo == 'DOCENTE'" class="mt-3 animate-fade-in">
+                        <div class="bg-light p-3 rounded border">
+                            <label class="form-label small fw-bold text-muted mb-2"><i class="bi bi-easel me-1"></i> ¿Para qué aula es el material?</label>
                             <div class="d-flex gap-2">
-                                <select v-model="docenteGrado" class="form-select form-select-sm py-0" style="height: 30px;"><option value="">Grado</option><option>1ro</option><option>2do</option><option>3ro</option><option>4to</option><option>5to</option></select>
-                                <select v-model="docenteSeccion" class="form-select form-select-sm py-0" style="height: 30px;"><option value="">Sección</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
+                                <select v-model="docenteGrado" class="form-select form-select-sm"><option value="">-- Grado --</option><option>1ro</option><option>2do</option><option>3ro</option><option>4to</option><option>5to</option></select>
+                                <select v-model="docenteSeccion" class="form-select form-select-sm"><option value="">-- Sección --</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
 
             <!-- 2. SELECCIÓN DE LIBROS -->
-            <div class="card border-0 shadow-sm" style="height: calc(100vh - 280px); min-height: 400px;">
-                <div class="card-header bg-white border-bottom border-light pt-3 px-3 pb-2">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="d-flex align-items-center"><span class="badge bg-secondary bg-opacity-10 text-secondary me-2">PASO 2</span><h6 class="fw-bold mb-0 text-dark">Seleccionar Material</h6></div>
-                        <small class="text-muted" style="font-size: 0.7rem;">{{ librosFiltrados.length }} disp.</small>
+            <div class="card border-0 shadow-sm" style="min-height: 500px;">
+                <div class="card-header bg-white border-bottom border-light pt-4 px-4 pb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary me-2">PASO 2</span>
+                            <h6 class="fw-bold mb-0 text-dark">Seleccionar Material</h6>
+                        </div>
+                        <small class="text-muted">{{ librosFiltrados.length }} disponibles</small>
                     </div>
-                    <div class="input-group input-group-sm mb-2">
+
+                    <div class="input-group mb-3">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" v-model="busquedaLibro" class="form-control border-start-0 bg-light" placeholder="Buscar título o código...">
+                        <input type="text" v-model="busquedaLibro" class="form-control border-start-0 bg-light" placeholder="Buscar por título, autor o código...">
                     </div>
-                    <div class="d-flex gap-1 overflow-auto pb-1 custom-scrollbar" style="white-space: nowrap;">
-                        <button class="btn btn-xs rounded-pill px-2" :class="filtroCategoria === '' ? 'btn-dark' : 'btn-light border'" @click="filtroCategoria = ''" style="font-size: 0.7rem;">Todos</button>
-                        <button v-for="cat in categoriasUnicas" class="btn btn-xs rounded-pill px-2" :class="filtroCategoria === cat ? 'btn-dark' : 'btn-light border'" @click="filtroCategoria = cat" style="font-size: 0.7rem;">{{ cat }}</button>
+
+                    <!-- Filtros de Categoría -->
+                    <div class="d-flex gap-2 overflow-auto pb-2" style="white-space: nowrap;">
+                        <button class="btn btn-sm rounded-pill" 
+                                :class="filtroCategoria === '' ? 'btn-dark' : 'btn-light border'"
+                                @click="filtroCategoria = ''">Todos</button>
+                        <button v-for="cat in categoriasUnicas" 
+                                class="btn btn-sm rounded-pill" 
+                                :class="filtroCategoria === cat ? 'btn-dark' : 'btn-light border'"
+                                @click="filtroCategoria = cat">
+                            {{ cat }}
+                        </button>
                     </div>
                 </div>
                 
-                <div class="card-body p-0 overflow-auto custom-scrollbar">
-                    <div class="list-group list-group-flush">
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush custom-scrollbar" style="max-height: 450px; overflow-y: auto;">
                         <button v-for="libro in librosFiltrados.slice(0, 30)" 
                                 @click="agregarAlCarrito(libro)" 
-                                class="list-group-item list-group-item-action p-2 border-bottom-0 border-top d-flex align-items-center hover-bg-light"
+                                class="list-group-item list-group-item-action p-3 border-bottom-0 border-top d-flex align-items-center hover-bg-light"
                                 :disabled="libro.stock_disponible < 1"
                                 :class="{'opacity-50': libro.stock_disponible < 1}">
                             
-                            <div class="me-2 rounded bg-light text-secondary d-flex align-items-center justify-content-center fs-5 fw-bold shadow-sm" style="width: 35px; height: 45px; border: 1px solid #eee;">{{ libro.titulo.charAt(0) }}</div>
-                            <div class="flex-grow-1" style="line-height: 1.1;">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <h6 class="mb-0 fw-bold text-dark text-truncate small" style="max-width: 200px;">{{ libro.titulo }}</h6>
-                                    <span v-if="libro.stock_disponible > 0" class="badge bg-light text-success border border-success" style="font-size: 0.6rem;">{{ libro.stock_disponible }}</span>
-                                    <span v-else class="badge bg-danger" style="font-size: 0.6rem;">0</span>
-                                </div>
-                                <div class="text-muted d-flex gap-2" style="font-size: 0.65rem;"><span>{{ libro.autor }}</span><span v-if="libro.editorial">• {{ libro.editorial }}</span></div>
+                            <div class="me-3 rounded bg-light text-secondary d-flex align-items-center justify-content-center fs-3 fw-bold shadow-sm" style="width: 45px; height: 60px; border: 1px solid #eee;">
+                                {{ libro.titulo.charAt(0) }}
                             </div>
-                            <div class="ms-2 text-success" v-if="libro.stock_disponible > 0"><i class="bi bi-plus-circle-fill"></i></div>
+
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h6 class="mb-1 fw-bold text-dark text-truncate" style="max-width: 350px;">{{ libro.titulo }}</h6>
+                                    <span v-if="libro.stock_disponible > 0" class="badge bg-light text-success border border-success">Disp: {{ libro.stock_disponible }}</span>
+                                    <span v-else class="badge bg-danger">Agotado</span>
+                                </div>
+                                <div class="text-muted small d-flex gap-3">
+                                    <span><i class="bi bi-person me-1"></i> {{ libro.autor }}</span>
+                                    <span v-if="libro.editorial"><i class="bi bi-journal-bookmark me-1"></i> {{ libro.editorial }}</span>
+                                </div>
+                            </div>
+
+                            <div class="ms-3 text-success" v-if="libro.stock_disponible > 0">
+                                <i class="bi bi-plus-circle-fill fs-4" style="color: #8B1538;"></i>
+                            </div>
                         </button>
+
+                        <div v-if="!cargandoLibros && librosFiltrados.length === 0" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>
+                            <p>No se encontraron libros.</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA: TICKET -->
+        <!-- COLUMNA DERECHA: TICKET DE PRÉSTAMO -->
         <div class="col-md-4">
-            <div class="card border-0 shadow h-100 position-sticky" style="top: 10px; border-radius: 12px; overflow: hidden; height: calc(100vh - 100px) !important;">
+            <div class="card border-0 shadow h-100 position-sticky" style="top: 20px; border-radius: 12px; overflow: hidden;">
                 
+                <!-- HEADER COLOR VINO -->
                 <div class="p-3 text-white d-flex justify-content-between align-items-center" style="background-color: #8B1538;">
                     <div class="fw-bold"><i class="bi bi-basket me-2"></i>Resumen</div>
                     <span class="badge bg-white text-danger fw-bold rounded-pill">{{ totalLibrosCarrito }}</span>
                 </div>
 
-                <!-- Lista Carrito (Se expande para llenar el espacio) -->
-                <div class="card-body p-0 d-flex flex-column bg-white flex-grow-1 overflow-hidden">
+                <div class="card-body p-0 d-flex flex-column bg-white" style="height: 600px;">
+                    
+                    <!-- LISTA CARRITO (ITEMS) -->
                     <div class="flex-grow-1 overflow-auto p-3 custom-scrollbar">
                         <div v-if="carrito.length === 0" class="h-100 d-flex flex-column align-items-center justify-content-center text-muted text-center opacity-50">
-                            <i class="bi bi-cart-plus display-4 mb-2"></i>
-                            <p class="small mb-0">Agregue libros para<br>iniciar el préstamo.</p>
+                            <i class="bi bi-cart-plus display-4 mb-3"></i>
+                            <p class="small">Agregue libros para<br>iniciar el préstamo.</p>
                         </div>
 
-                        <div v-for="(item, index) in carrito" :key="index" class="d-flex align-items-center mb-2 pb-2 border-bottom animate-slide-in">
-                            <button @click="removerDelCarrito(index)" class="btn btn-sm text-danger me-1 p-0"><i class="bi bi-trash-fill"></i></button>
-                            <div class="flex-grow-1 me-2">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <div class="fw-bold text-dark small text-truncate" style="max-width: 140px;">{{ item.titulo }}</div>
-                                    <small class="text-muted fw-bold" style="font-size: 0.6rem;">DISP. {{ item.max_stock }}</small>
+                        <div v-for="(item, index) in carrito" :key="index" class="d-flex align-items-center mb-3 pb-3 border-bottom animate-slide-in">
+                            <button @click="removerDelCarrito(index)" class="btn btn-sm text-danger me-2 p-0"><i class="bi bi-trash-fill"></i></button>
+                            
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between">
+                                    <div class="fw-bold small text-dark mb-1 line-clamp-2">{{ item.titulo }}</div>
+                                    <small class="text-muted fw-bold" style="font-size: 0.65rem;">DISP. {{ item.max_stock }}</small>
                                 </div>
-                                <!-- INPUT EDITABLE COMPACTO -->
-                                <div class="input-group input-group-sm">
-                                    <button class="btn btn-outline-secondary py-0 px-2" @click="actualizarCantidad(item, -1)">-</button>
-                                    <input type="number" v-model.number="item.cantidad" @change="validarCantidad(item)" class="form-control text-center fw-bold py-0" min="1" :max="item.max_stock">
-                                    <button class="btn btn-outline-secondary py-0 px-2" @click="actualizarCantidad(item, 1)">+</button>
+                                
+                                <!-- INPUT EDITABLE DIRECTO -->
+                                <div class="input-group input-group-sm" style="width: 130px;">
+                                    <input type="number" 
+                                           v-model.number="item.cantidad" 
+                                           @change="validarCantidad(item)"
+                                           class="form-control text-center fw-bold" 
+                                           min="1" :max="item.max_stock">
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Footer: FECHA Y CONFIRMACIÓN -->
-                    <div class="p-3 bg-light border-top">
-                        <div class="mb-2">
-                            <label class="form-label small fw-bold text-dark mb-1">Tipo de Préstamo</label>
-                            <div class="btn-group w-100 mb-2">
-                                <button class="btn btn-sm" :class="tipoPrestamo === 'AULA' ? 'btn-vino text-white' : 'btn-outline-secondary bg-white'" @click="setTipoPrestamo('AULA')" :disabled="horarioAulaCerrado">En Aula</button>
-                                <button class="btn btn-sm" :class="tipoPrestamo === 'DOMICILIO' ? 'btn-vino text-white' : 'btn-outline-secondary bg-white'" @click="setTipoPrestamo('DOMICILIO')">Domicilio</button>
+                    <!-- FOOTER: FECHA Y CONFIRMACIÓN -->
+                    <div class="p-4 bg-light border-top">
+                        
+                        <!-- SELECTOR DE TIPO DE PRÉSTAMO -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-dark mb-2">Tipo de Préstamo</label>
+                            <div class="d-flex gap-2 mb-3">
+                                <button class="btn btn-sm flex-grow-1" 
+                                        :class="tipoPrestamo === 'AULA' ? 'text-white' : 'btn-light border'"
+                                        :style="tipoPrestamo === 'AULA' ? 'background-color: #8B1538' : ''"
+                                        @click="setTipoPrestamo('AULA')"
+                                        :disabled="horarioAulaCerrado"> 
+                                    <i class="bi bi-clock me-1"></i> En Aula (Hoy)
+                                </button>
+                                <button class="btn btn-sm flex-grow-1" 
+                                        :class="tipoPrestamo === 'DOMICILIO' ? 'text-white' : 'btn-light border'"
+                                        :style="tipoPrestamo === 'DOMICILIO' ? 'background-color: #8B1538' : ''"
+                                        @click="setTipoPrestamo('DOMICILIO')">
+                                    <i class="bi bi-house-door me-1"></i> Domicilio
+                                </button>
                             </div>
 
                             <!-- Aviso Aula Cerrada -->
-                            <div v-if="horarioAulaCerrado && tipoPrestamo !== 'DOMICILIO'" class="alert alert-secondary py-1 px-2 mb-1 d-flex align-items-center border-0">
-                                <i class="bi bi-lock-fill me-1 small"></i><small style="font-size: 0.65rem;">Aula cerrada (> 1:05 PM).</small>
+                            <div v-if="horarioAulaCerrado && tipoPrestamo !== 'DOMICILIO'" class="alert alert-secondary border-0 py-2 mb-2 d-flex align-items-center">
+                                <i class="bi bi-lock-fill me-2"></i>
+                                <small>Préstamos de aula cerrados (Pasado 1:05 PM).</small>
                             </div>
 
-                            <!-- AULA: Horarios -->
-                            <div v-if="tipoPrestamo === 'AULA' && !horarioAulaCerrado">
-                                <select v-model="horaDevolucion" class="form-select form-select-sm fw-bold mb-1" style="font-size: 0.75rem;">
+                            <!-- AULA: Horarios Pedagógicos -->
+                            <div v-if="tipoPrestamo === 'AULA' && !horarioAulaCerrado" class="mb-2">
+                                <label class="form-label small text-muted mb-1">Horario de Devolución</label>
+                                <select v-model="horaDevolucion" class="form-select form-select-sm fw-bold">
                                     <option value="08:15">07:30 - 08:15 (1° Hora)</option>
                                     <option value="09:00">08:15 - 09:00 (2° Hora)</option>
                                     <option value="09:45">09:00 - 09:45 (3° Hora)</option>
@@ -188,37 +251,52 @@
                                     <option value="12:45">12:00 - 12:45 (6° Hora)</option>
                                     <option value="13:05">12:45 - 13:05 (Salida)</option>
                                 </select>
-                                <div class="text-end text-warning small fw-bold" style="font-size: 0.65rem;">
-                                    Límite: {{ calcularHoraMax(horaDevolucion) }}
+                                <div class="mt-2 alert alert-warning border-0 py-2 mb-0 d-flex align-items-center">
+                                    <i class="bi bi-info-circle-fill me-2"></i>
+                                    <small>
+                                        Devolver hoy máximo: 
+                                        <strong>{{ calcularHoraMax(horaDevolucion) }}</strong> 
+                                        (10 min tol.)
+                                    </small>
                                 </div>
                             </div>
 
-                            <!-- DOMICILIO: Fecha Y HORA -->
+                            <!-- DOMICILIO: Fecha y HORA -->
                             <div v-if="tipoPrestamo === 'DOMICILIO'">
-                                <div class="row g-1">
+                                <div class="row g-2">
                                     <div class="col-7">
-                                        <input type="date" v-model="fechaDevolucion" class="form-control form-control-sm fw-bold text-center border-primary" @change="validarFechaDomicilio" :min="minDate" :max="maxDate" style="font-size: 0.75rem;">
+                                        <label class="form-label small text-muted mb-1">Fecha Límite</label>
+                                        <input type="date" 
+                                               v-model="fechaDevolucion" 
+                                               class="form-control form-control-sm fw-bold text-center border-primary" 
+                                               @change="validarFechaDomicilio"
+                                               :min="minDate" 
+                                               :max="maxDate">
                                     </div>
                                     <div class="col-5">
-                                        <select v-model="horaDomicilio" class="form-select form-select-sm fw-bold" style="font-size: 0.75rem;">
-                                            <option value="07:30">7:30 AM (Ingreso)</option>
-                                            <option value="09:45">9:45 AM (Recreo)</option>
-                                            <option value="13:05">1:05 PM (Salida)</option>
+                                        <label class="form-label small text-muted mb-1">Hora Entrega</label>
+                                        <select v-model="horaDomicilio" class="form-select form-select-sm fw-bold">
+                                            <option value="07:30">7:30 AM</option>
+                                            <option value="09:45">9:45 AM</option>
+                                            <option value="13:05">1:05 PM</option>
                                         </select>
                                     </div>
                                 </div>
                                 
-                                <div v-if="errorFecha" class="mt-1 text-danger fw-bold text-end" style="font-size: 0.65rem;">
-                                    <i class="bi bi-exclamation-circle"></i> {{ errorFecha }}
+                                <div v-if="errorFecha" class="mt-2 alert alert-danger border-0 py-1 mb-0 d-flex align-items-center">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <small>{{ errorFecha }}</small>
                                 </div>
-                                <div v-else class="text-end text-muted mt-1" style="font-size: 0.65rem;">Máx 3 días</div>
+                                <div v-else class="d-flex justify-content-end mt-1">
+                                    <span class="badge bg-warning text-dark" style="font-size: 0.65rem;">Máximo 5 días</span>
+                                </div>
                             </div>
                         </div>
 
-                        <button @click="guardarPrestamo" class="btn w-100 py-2 text-white fw-bold shadow-sm btn-gold btn-sm" 
+                        <button @click="guardarPrestamo" class="btn w-100 py-3 text-white fw-bold shadow-sm btn-gold" 
                                 :disabled="carrito.length === 0 || !personaSeleccionada || procesando || errorFecha || (tipoPrestamo==='AULA' && horarioAulaCerrado)">
-                            <span v-if="procesando"><span class="spinner-border spinner-border-sm me-1"></span>...</span>
-                            <span v-else><i class="bi bi-check-circle-fill me-1"></i> CONFIRMAR</span>
+                            <span v-if="procesando"><span class="spinner-border spinner-border-sm me-2"></span>Procesando...</span>
+                            <span v-else><i class="bi bi-check-circle-fill me-2"></i> CONFIRMAR PRÉSTAMO</span>
                         </button>
                     </div>
                 </div>
@@ -227,22 +305,20 @@
 
     </div>
 </div>
+
 </div> 
 
 <style>
     .hover-bg-light:hover { background-color: #f8f9fa !important; }
-    .btn-vino { background-color: #8B1538 !important; border-color: #8B1538 !important; }
     .btn-gold { background-color: #D4AF37; border: none; }
     .btn-gold:hover { background-color: #c4a030; transform: translateY(-1px); }
     .btn-gold:disabled { background-color: #e0e0e0; color: #999; transform: none; }
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
     .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .animate-slide-in { animation: slideIn 0.2s ease-out; }
-    @keyframes slideIn { from { opacity: 0; transform: translateX(5px); } to { opacity: 1; transform: translateX(0); } }
-    /* Ajuste para altura dinámica del contenido */
-    .card-body { display: flex; flex-direction: column; }
+    .animate-fade-in { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
 <script>
@@ -259,7 +335,7 @@
                 tipoPrestamo: 'DOMICILIO', 
                 fechaDevolucion: '',
                 horaDevolucion: '09:00', // Hora Aula
-                horaDomicilio: '07:30',  // Hora Domicilio
+                horaDomicilio: '07:30',  // Hora Domicilio por defecto
                 
                 procesando: false, horarioAulaCerrado: false, errorFecha: '' 
             }
@@ -280,7 +356,11 @@
             categoriasUnicas() { return [...new Set(this.libros.map(l => l.categoria).filter(c => c))]; },
             totalLibrosCarrito() { return this.carrito.reduce((sum, item) => sum + item.cantidad, 0); },
             minDate() { return new Date().toISOString().split('T')[0]; },
-            maxDate() { const d = new Date(); d.setDate(d.getDate() + 3); return d.toISOString().split('T')[0]; }
+            maxDate() { 
+                const d = new Date();
+                d.setDate(d.getDate() + 4); // CAMBIO: 5 DÍAS
+                return d.toISOString().split('T')[0]; 
+            }
         },
         mounted() {
             this.cargarDatos();
@@ -294,7 +374,7 @@
                     this.cargandoLibros = true;
                     const resLib = await fetch('../api/libros.php?limit=1000'); const dataLib = await resLib.json();
                     this.libros = dataLib.data || []; this.cargandoLibros = false;
-                } catch(e) { console.error(e); this.cargandoLibros = false; }
+                } catch(e) { console.error("Error:", e); this.cargandoLibros = false; }
             },
             seleccionarPersona(p) { this.personaSeleccionada = p; this.mostrarListaPersonas = false; this.filtroPersona = ''; this.docenteGrado = ''; this.docenteSeccion = ''; },
             limpiarPersona() { this.personaSeleccionada = null; this.filtroPersona = ''; setTimeout(() => document.querySelector('input[placeholder="Escriba nombre, apellido o DNI..."]').focus(), 100); },
@@ -336,8 +416,13 @@
                 if (!this.fechaDevolucion) return;
                 const fecha = new Date(this.fechaDevolucion + 'T00:00:00'); 
                 if (fecha.getDay() === 0 || fecha.getDay() === 6) { this.errorFecha = "No sábados/domingos."; return; }
-                const limite = new Date(); limite.setDate(limite.getDate() + 3); limite.setHours(23,59,59);
-                if (fecha > limite) this.errorFecha = "Máx 3 días.";
+                
+                // CAMBIO: Validación a 5 días
+                const limite = new Date(); 
+                limite.setDate(limite.getDate() + 5); 
+                limite.setHours(23,59,59);
+                
+                if (fecha > limite) this.errorFecha = "Máx 5 días.";
             },
             calcularHoraMax(horaFin) {
                 if (!horaFin) return '';
@@ -354,7 +439,7 @@
                 
                 // Determinar hora límite según el tipo
                 let hLimite = null;
-                if(this.tipoPrestamo === 'AULA') hLimite = this.horaDevolucion;
+                if(this.tipoPrestamo === 'AULA') hLimite = this.calcularHoraMax(this.horaDevolucion);
                 if(this.tipoPrestamo === 'DOMICILIO') hLimite = this.horaDomicilio;
 
                 const datos = { 

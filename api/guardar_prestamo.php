@@ -28,11 +28,14 @@ $obs_parts = [];
 
 if ($tipo_prestamo === 'AULA') {
     $obs_parts[] = "Tipo: En Aula";
-    if ($hora_limite) {
-        $obs_parts[] = "Devolución límite hoy a las: " . $hora_limite;
-    }
 } else {
     $obs_parts[] = "Tipo: Domicilio";
+}
+
+// CORRECCIÓN: Agregar la hora límite SIEMPRE que exista, no solo para Aula
+if ($hora_limite) {
+    // Usamos el formato estándar que espera el parser de historial.php
+    $obs_parts[] = "Devolución límite a las: " . $hora_limite;
 }
 
 // Si el usuario es docente y envió datos de aula, los agregamos

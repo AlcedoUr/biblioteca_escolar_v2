@@ -57,7 +57,7 @@
         </div>
     </div>
 
-    <!-- TABLA DE SEGUIMIENTO MEJORADA -->
+    <!-- TABLA DE SEGUIMIENTO -->
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -65,54 +65,39 @@
                     <thead class="bg-light">
                         <tr class="text-muted small text-uppercase">
                             <th class="ps-4">Solicitante</th>
-                            <th>Rol</th> <!-- NUEVA COLUMNA ROL -->
-                            <th>Ubicación / Destino</th>
+                            <th>Ubicación</th>
                             <th style="width: 25%;">Libros Prestados</th>
                             <th>Vencimiento</th>
+                            <th>Horario</th> <!-- NUEVA COLUMNA -->
                             <th>Estado</th>
                             <th>Atraso</th>
                             <th class="text-end pe-4">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="p in prestamosFiltrados" :key="p.id">
+                        <tr v-for="p in prestamosFiltrados" :key="p.id" :class="{'bg-danger bg-opacity-10': esVencido(p)}">
                             
                             <!-- Solicitante -->
                             <td class="ps-4">
                                 <div class="fw-bold text-dark">{{ p.solicitante }}</div>
-                                <small class="text-muted">ID: #{{ p.id }}</small>
-                            </td>
-
-                            <!-- Rol (Separado para claridad) -->
-                            <td>
-                                <span v-if="p.tipo_solicitante == 'ESTUDIANTE'" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10">
-                                    Estudiante
-                                </span>
-                                <span v-else class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-10">
-                                    Docente
-                                </span>
-                            </td>
-
-                            <!-- Ubicación (Solo el lugar) -->
-                            <td>
-                                <!-- Prioridad 1: Aula Específica (Docente pidiendo para salón) -->
-                                <div v-if="p.aula_info" class="d-flex align-items-center text-dark fw-bold">
-                                    <i class="bi bi-easel2-fill text-warning me-2"></i>
-                                    {{ p.aula_info }}
+                                <div class="d-flex align-items-center gap-2">
+                                    <span v-if="p.tipo_solicitante == 'ESTUDIANTE'" class="badge bg-light text-secondary border" style="font-size: 0.6rem;">Estudiante</span>
+                                    <span v-else class="badge bg-light text-success border border-success" style="font-size: 0.6rem;">Docente</span>
                                 </div>
-                                
-                                <!-- Prioridad 2: Salón del Estudiante -->
-                                <div v-else-if="p.tipo_solicitante == 'ESTUDIANTE'" class="text-dark">
+                            </td>
+
+                            <!-- Ubicación -->
+                            <td>
+                                <div v-if="p.aula_info" class="fw-bold text-dark small">
+                                    <i class="bi bi-easel2-fill text-warning me-1"></i> {{ p.aula_info }}
+                                </div>
+                                <div v-else-if="p.tipo_solicitante == 'ESTUDIANTE'" class="small text-dark">
                                     {{ p.grado }} "{{ p.seccion }}"
                                 </div>
-                                
-                                <!-- Prioridad 3: Uso Personal -->
-                                <div v-else class="text-muted small fst-italic">
-                                    -
-                                </div>
+                                <div v-else class="text-muted small fst-italic">-</div>
                             </td>
 
-                            <!-- Resumen de Libros -->
+                            <!-- Libros -->
                             <td>
                                 <div class="d-flex align-items-center">
                                     <span class="badge bg-secondary me-2">{{ p.total_libros }}</span>
@@ -122,22 +107,37 @@
                                 </div>
                             </td>
 
-                            <!-- Fechas -->
+                            <!-- Fecha Vencimiento -->
                             <td>
-                                <div class="fw-bold text-dark small">{{ p.fecha_devolucion_pactada }}</div>
+                                <div class="fw-bold small" :class="esVencido(p) ? 'text-danger' : 'text-dark'">
+                                    {{ p.fecha_devolucion_pactada }}
+                                </div>
+                            </td>
+
+                            <!-- Horario Límite (NUEVA COLUMNA VISIBLE) -->
+                            <td>
+                                <span v-if="p.hora_limite" class="fw-bold" :class="esVencido(p) ? 'text-danger' : 'text-primary'">
+                                    <i class="bi bi-clock me-1"></i> {{ p.hora_limite }}
+                                </span>
+                                <span v-else class="text-muted small">-</span>
                             </td>
 
                             <!-- Estado -->
                             <td>
-                                <span v-if="esVencido(p)" class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3">Vencido</span>
-                                <span v-else-if="p.estado == 'PENDIENTE'" class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3">Activo</span>
-                                <span v-else class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Devuelto</span>
+                                <span v-if="esVencido(p)" class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2">Vencido</span>
+                                <span v-else-if="p.estado == 'PENDIENTE'" class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2">Activo</span>
+                                <span v-else class="badge bg-success bg-opacity-10 text-success rounded-pill px-2">Devuelto</span>
+                                
+                                <!-- Texto de atraso si venció hoy por hora -->
+                                <div v-if="esVencido(p) && p.estado === 'PENDIENTE'" class="text-danger fw-bold" style="font-size: 0.65rem; margin-top: 2px;">
+                                    ¡ATRASADO!
+                                </div>
                             </td>
 
                             <!-- Atraso -->
                             <td>
                                 <span v-if="esVencido(p)" class="text-danger fw-bold small">
-                                    {{ calcularAtraso(p.fecha_devolucion_pactada) }} días
+                                    {{ calcularAtraso(p) }}
                                 </span>
                                 <span v-else class="text-muted small">-</span>
                             </td>
@@ -147,7 +147,6 @@
                                 <button @click="verDetalle(p)" class="btn btn-sm btn-light border me-1" title="Ver Detalle">
                                     <i class="bi bi-eye"></i>
                                 </button>
-                                
                                 <a :href="'detalle_prestamo.php?id=' + p.id" 
                                    class="btn btn-sm fw-bold border hover-green"
                                    :class="p.estado == 'PENDIENTE' ? 'btn-outline-success' : 'btn-light text-muted disabled'">
@@ -173,46 +172,22 @@
                     <button type="button" class="btn-close btn-close-white" @click="modal.visible = false"></button>
                 </div>
                 <div class="modal-body">
-                    
-                    <!-- CABECERA DEL MODAL -->
-                    <div class="row mb-3 bg-light p-3 rounded mx-0">
-                        <div class="col-6 border-end">
-                            <label class="small text-muted fw-bold d-block text-uppercase" style="font-size: 0.7rem;">Solicitante</label>
-                            <span class="fs-6 text-dark fw-bold">{{ modal.data.solicitante }}</span>
-                            <div class="badge bg-white text-dark border mt-1">{{ modal.data.tipo_solicitante }}</div>
-                        </div>
-                        <div class="col-6 ps-3">
-                            <label class="small text-muted fw-bold d-block text-uppercase" style="font-size: 0.7rem;">Destino</label>
-                            
-                            <div v-if="modal.data.aula_info" class="mt-1">
-                                <span class="fw-bold text-dark"><i class="bi bi-easel2 me-1"></i> Aula {{ modal.data.aula_info }}</span>
-                            </div>
-                            <div v-else-if="modal.data.tipo_solicitante == 'ESTUDIANTE'" class="mt-1">
-                                <span class="fw-bold text-dark">{{ modal.data.grado }} "{{ modal.data.seccion }}"</span>
-                            </div>
-                            <div v-else class="mt-1 text-muted small fst-italic">
-                                Uso Personal
-                            </div>
-                        </div>
+                    <div class="mb-3">
+                        <label class="small text-muted fw-bold">Solicitante:</label>
+                        <div class="fs-5">{{ modal.data.solicitante }}</div>
                     </div>
-                    
-                    <label class="small text-muted fw-bold mb-2 text-uppercase">Material Prestado</label>
-                    <ul class="list-group list-group-flush mb-3 border rounded">
-                        <li class="list-group-item d-flex justify-content-between align-items-center" 
-                            v-for="item in (modal.data.resumen_libros ? modal.data.resumen_libros.split(', ') : [])" :key="item">
-                            <span><i class="bi bi-book me-2 text-secondary"></i>{{ item }}</span>
+                    <div class="mb-3" v-if="modal.data.hora_limite">
+                        <label class="small text-danger fw-bold">Hora Límite de Entrega:</label>
+                        <div class="text-danger fw-bold fs-5"><i class="bi bi-alarm"></i> {{ modal.data.hora_limite }}</div>
+                    </div>
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item" v-for="item in (modal.data.resumen_libros ? modal.data.resumen_libros.split(', ') : [])" :key="item">
+                            <i class="bi bi-book me-2 text-secondary"></i> {{ item }}
                         </li>
                     </ul>
-
-                    <div v-if="modal.data.observaciones" class="alert alert-info py-2 small mb-0">
-                        <i class="bi bi-info-circle me-1"></i> <strong>Nota:</strong> {{ modal.data.observaciones }}
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="modal.visible = false">Cerrar</button>
-                    <a :href="'detalle_prestamo.php?id=' + modal.data.id" class="btn btn-success" v-if="modal.data.estado == 'PENDIENTE'">
-                        <i class="bi bi-box-arrow-in-down me-1"></i> Ir a Devolución
-                    </a>
                 </div>
             </div>
         </div>
@@ -252,12 +227,13 @@
                     const textoMatch = 
                         p.solicitante.toLowerCase().includes(this.busqueda.toLowerCase()) ||
                         (p.resumen_libros && p.resumen_libros.toLowerCase().includes(this.busqueda.toLowerCase())) || 
-                        p.id.toString().includes(this.busqueda) ||
-                        (p.aula_info && p.aula_info.toLowerCase().includes(this.busqueda.toLowerCase()));
+                        p.id.toString().includes(this.busqueda);
                     
                     let estadoMatch = true;
-                    if (this.filtroEstado === 'PENDIENTE') estadoMatch = p.estado === 'PENDIENTE' && !this.esVencido(p);
-                    else if (this.filtroEstado === 'VENCIDO') estadoMatch = this.esVencido(p);
+                    const estaVencido = this.esVencido(p); // Calculamos una sola vez
+
+                    if (this.filtroEstado === 'PENDIENTE') estadoMatch = p.estado === 'PENDIENTE' && !estaVencido;
+                    else if (this.filtroEstado === 'VENCIDO') estadoMatch = estaVencido; // Ahora incluye vencidos por hora
                     else if (this.filtroEstado === 'FINALIZADO') estadoMatch = p.estado === 'FINALIZADO';
                     
                     return textoMatch && estadoMatch;
@@ -266,6 +242,8 @@
         },
         mounted() {
             this.cargarHistorial();
+            // Recargar cada minuto para actualizar vencimientos por hora en tiempo real
+            setInterval(this.cargarHistorial, 60000);
         },
         methods: {
             async cargarHistorial() {
@@ -276,19 +254,47 @@
             },
             esVencido(prestamo) {
                 if (prestamo.estado !== 'PENDIENTE') return false;
+                
+                // Parsear Fecha Vencimiento
+                const partes = prestamo.fecha_devolucion_pactada.split('/');
+                const fechaVence = new Date(partes[2], partes[1] - 1, partes[0]);
+                
+                const ahora = new Date();
+                const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()); // Hoy 00:00:00
+                const fechaVenceSinHora = new Date(fechaVence.getFullYear(), fechaVence.getMonth(), fechaVence.getDate());
+
+                // 1. Si la fecha ya pasó (ayer o antes)
+                if (fechaVenceSinHora < hoy) return true;
+
+                // 2. Si es HOY, verificar HORA
+                if (fechaVenceSinHora.getTime() === hoy.getTime() && prestamo.hora_limite) {
+                    const [horas, minutos] = prestamo.hora_limite.split(':');
+                    // Crear objeto fecha con la hora límite de hoy
+                    const limiteHoy = new Date();
+                    limiteHoy.setHours(horas, minutos, 0);
+
+                    // Si la hora actual es mayor a la límite, está vencido
+                    if (ahora > limiteHoy) {
+                        return true; // ¡Ya pasó la hora!
+                    }
+                }
+
+                return false;
+            },
+            calcularAtraso(prestamo) {
                 const partes = prestamo.fecha_devolucion_pactada.split('/');
                 const fechaVence = new Date(partes[2], partes[1] - 1, partes[0]);
                 const hoy = new Date();
-                hoy.setHours(0,0,0,0);
-                return fechaVence < hoy;
-            },
-            calcularAtraso(fechaStr) {
-                const partes = fechaStr.split('/');
-                const fechaVence = new Date(partes[2], partes[1] - 1, partes[0]);
-                const hoy = new Date();
+                
+                // Si es hoy y venció por hora
+                if (this.esVencido(prestamo) && fechaVence.getDate() === hoy.getDate()) {
+                    return "Horas";
+                }
+                
+                // Si venció por días
                 const diferencia = hoy - fechaVence;
                 const dias = Math.ceil(diferencia / (1000 * 60 * 60 * 24));
-                return dias > 0 ? dias : 0;
+                return dias > 0 ? dias + " días" : 0;
             },
             verDetalle(prestamo) {
                 this.modal.data = prestamo;

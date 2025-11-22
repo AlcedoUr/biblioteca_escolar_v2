@@ -4,23 +4,17 @@ require_once '../config/db.php';
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 
-// ==========================================
-// 0. LISTAR CATEGORÍAS (Para el filtro)
-// ==========================================
+// 0. CATEGORÍAS
 if ($metodo == 'GET' && isset($_GET['get_categorias'])) {
     $sql = "SELECT DISTINCT categoria FROM libros WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria ASC";
     $res = $conn->query($sql);
     $cats = [];
-    while($row = $res->fetch_assoc()) {
-        $cats[] = $row['categoria'];
-    }
+    while($row = $res->fetch_assoc()) $cats[] = $row['categoria'];
     echo json_encode($cats);
     exit;
 }
 
-// ==========================================
-// 1. LISTAR LIBROS (GET)
-// ==========================================
+// 1. LISTAR (GET)
 if ($metodo == 'GET') {
     $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
@@ -29,25 +23,29 @@ if ($metodo == 'GET') {
     $busqueda = isset($_GET['q']) ? $conn->real_escape_string($_GET['q']) : '';
     $categoria_filtro = isset($_GET['categoria']) ? $conn->real_escape_string($_GET['categoria']) : '';
     
-    $where = "WHERE 1=1";
+    // Parámetros de Ordenamiento (NUEVO)
+    $sort = isset($_GET['sort']) ? $conn->real_escape_string($_GET['sort']) : 'id';
+    $order = isset($_GET['order']) ? $conn->real_escape_string($_GET['order']) : 'DESC';
     
-    // Filtro de texto
+    // Validar columnas permitidas para evitar SQL Injection
+    $columnas_permitidas = ['id', 'titulo', 'autor', 'stock_total'];
+    if (!in_array($sort, $columnas_permitidas)) $sort = 'id';
+    if ($order !== 'ASC' && $order !== 'DESC') $order = 'DESC';
+
+    $where = "WHERE 1=1";
     if ($busqueda) {
         $where .= " AND (titulo LIKE '%$busqueda%' OR autor LIKE '%$busqueda%' OR editorial LIKE '%$busqueda%')";
     }
-    
-    // Filtro de categoría
     if ($categoria_filtro && $categoria_filtro != 'TODO') {
         $where .= " AND categoria = '$categoria_filtro'";
     }
 
-    // Paginación
     $sql_count = "SELECT COUNT(*) as total FROM libros $where";
     $total_items = $conn->query($sql_count)->fetch_assoc()['total'];
     $total_pages = ceil($total_items / $limit);
 
-    // Consulta correcta a la tabla LIBROS
-    $sql = "SELECT * FROM libros $where ORDER BY id DESC LIMIT $limit OFFSET $offset";
+    // Consulta con Ordenamiento Dinámico
+    $sql = "SELECT * FROM libros $where ORDER BY $sort $order LIMIT $limit OFFSET $offset";
     $resultado = $conn->query($sql);
     
     $libros = [];
@@ -66,12 +64,8 @@ if ($metodo == 'GET') {
     exit;
 }
 
-// ==========================================
 // 2. GUARDAR (POST)
-// ==========================================
 if ($metodo == 'POST') {
-    
-    // [A] IMPORTACIÓN CSV
     if (isset($_FILES['archivo_csv'])) {
         $file = $_FILES['archivo_csv']['tmp_name'];
         $handle = fopen($file, "r");
@@ -83,7 +77,6 @@ if ($metodo == 'POST') {
             $editorial = $conn->real_escape_string($data[2] ?? '');
             $categoria = $conn->real_escape_string($data[3] ?? 'General');
             $stock = (int)($data[4] ?? 0);
-            
             if($titulo && $stock > 0) {
                 $sql = "INSERT INTO libros (titulo, autor, editorial, categoria, stock_total, stock_disponible) 
                         VALUES ('$titulo', '$autor', '$editorial', '$categoria', $stock, $stock)";
@@ -96,12 +89,11 @@ if ($metodo == 'POST') {
         exit;
     }
 
-    // [B] GUARDADO INDIVIDUAL
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
 
     if (empty($data['titulo']) || empty($data['stock'])) {
-        echo json_encode(['exito' => false, 'mensaje' => 'Faltan datos']);
+        echo json_encode(['exito' => false, 'mensaje' => 'Faltan datos obligatorios']);
         exit;
     }
 
@@ -113,26 +105,19 @@ if ($metodo == 'POST') {
     $nuevo_stock_total = (int)$data['stock'];
 
     if ($id) {
-        // Edición inteligente de stock
         $qry = $conn->query("SELECT stock_total, stock_disponible FROM libros WHERE id=$id");
         $libro_actual = $qry->fetch_assoc();
-        
         $diferencia = $nuevo_stock_total - (int)$libro_actual['stock_total'];
         $nuevo_disponible = (int)$libro_actual['stock_disponible'] + $diferencia;
 
         if ($nuevo_disponible < 0) {
-            echo json_encode(['exito' => false, 'mensaje' => 'Error: Stock menor a prestados.']);
+            echo json_encode(['exito' => false, 'mensaje' => 'Stock total no puede ser menor a lo prestado.']);
             exit;
         }
 
-        $sql = "UPDATE libros SET 
-                titulo='$titulo', autor='$autor', editorial='$editorial',
-                categoria='$categoria', stock_total=$nuevo_stock_total,
-                stock_disponible=$nuevo_disponible WHERE id=$id";
+        $sql = "UPDATE libros SET titulo='$titulo', autor='$autor', editorial='$editorial', categoria='$categoria', stock_total=$nuevo_stock_total, stock_disponible=$nuevo_disponible WHERE id=$id";
     } else {
-        // Creación
-        $sql = "INSERT INTO libros (titulo, autor, editorial, categoria, stock_total, stock_disponible) 
-                VALUES ('$titulo', '$autor', '$editorial', '$categoria', $nuevo_stock_total, $nuevo_stock_total)";
+        $sql = "INSERT INTO libros (titulo, autor, editorial, categoria, stock_total, stock_disponible) VALUES ('$titulo', '$autor', '$editorial', '$categoria', $nuevo_stock_total, $nuevo_stock_total)";
     }
 
     if ($conn->query($sql)) {
@@ -143,9 +128,7 @@ if ($metodo == 'POST') {
     exit;
 }
 
-// ==========================================
 // 3. ELIMINAR (DELETE)
-// ==========================================
 if ($metodo == 'DELETE') {
     $id = $_GET['id'] ?? 0;
     $check = $conn->query("SELECT count(*) FROM detalle_prestamo WHERE id_libro=$id AND estado_devolucion='PENDIENTE'");
@@ -154,7 +137,6 @@ if ($metodo == 'DELETE') {
         echo json_encode(['exito' => false, 'mensaje' => 'Tiene préstamos activos.']);
         exit;
     }
-
     if ($conn->query("DELETE FROM libros WHERE id=$id")) {
         echo json_encode(['exito' => true]);
     } else {
