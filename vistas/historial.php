@@ -19,7 +19,7 @@
                 <div class="col-md-6">
                     <div class="input-group border-0 bg-white rounded px-2 py-1 shadow-sm">
                         <span class="input-group-text bg-transparent border-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" v-model="busqueda" class="form-control border-0 shadow-none" placeholder="Buscar por solicitante, libro...">
+                        <input type="text" v-model="busqueda" class="form-control border-0 shadow-none" placeholder="Buscar por solicitante, libro o código...">
                     </div>
                 </div>
                 <div class="col-md-3 ms-auto">
@@ -50,7 +50,14 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="p in listaFiltrada" :key="p.tipo_registro + '-' + p.id" class="animate-fade">
+                        <tr v-if="cargando">
+                            <td colspan="6" class="text-center py-5">
+                                <div class="spinner-border text-secondary" role="status"></div>
+                                <p class="text-muted small mt-2">Cargando datos...</p>
+                            </td>
+                        </tr>
+
+                        <tr v-for="p in listaFiltrada" :key="p.tipo_registro + '-' + p.id" class="animate-fade" v-if="!cargando">
                             
                             <td class="ps-4">
                                 <div class="fw-bold text-dark">{{ p.solicitante }}</div>
@@ -65,14 +72,20 @@
                                     </span>
                                     <div class="small text-muted">Aula {{ p.grado }} "{{ p.seccion }}"</div>
                                 </div>
+
                                 <div v-else>
                                     <div v-if="p.es_reserva_convertida" class="mb-1">
                                         <span class="badge bg-primary bg-opacity-10 text-primary border border-primary rounded-pill" style="font-size: 0.6rem;">
                                             <i class="bi bi-bookmark-star-fill me-1"></i> Origen Reserva
                                         </span>
                                     </div>
-                                    <div v-if="p.aula_info" class="small text-dark fw-bold"><i class="bi bi-easel2 me-1 text-danger"></i> En Aula: {{ p.aula_info }}</div>
-                                    <div v-else class="small text-muted"><i class="bi bi-house-door me-1 text-success"></i> Domicilio</div>
+
+                                    <div v-if="p.aula_info" class="small text-dark fw-bold">
+                                        <i class="bi bi-easel2 text-danger me-1"></i> En Aula: {{ p.aula_info }}
+                                    </div>
+                                    <div v-else class="small text-muted">
+                                        <i class="bi bi-house-door text-success me-1"></i> Domicilio
+                                    </div>
                                 </div>
                             </td>
 
@@ -88,6 +101,7 @@
                             <td>
                                 <div class="d-flex flex-column">
                                     <span class="fw-bold text-dark small">{{ p.fecha_fin_fmt }}</span>
+                                    
                                     <small v-if="p.hora_limite" class="text-muted" style="font-size: 0.75rem;">
                                         <i class="bi bi-clock me-1"></i> Límite: {{ p.hora_limite }}
                                     </small>
@@ -114,7 +128,7 @@
                                     <button class="btn btn-light btn-sm rounded-circle shadow-sm border-0" type="button" data-bs-toggle="dropdown">
                                         <i class="bi bi-three-dots-vertical text-muted"></i>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow p-2">
+                                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow p-2" style="min-width: 170px;">
                                         
                                         <li v-if="p.tipo_registro == 'RESERVA'">
                                             <a class="dropdown-item rounded small py-2 fw-bold text-success bg-success bg-opacity-10 mb-1" href="#" @click.prevent="entregarReserva(p)">
@@ -139,13 +153,10 @@
                                 </div>
                             </td>
                         </tr>
-                        <tr v-if="listaFiltrada.length === 0">
+                        <tr v-if="!cargando && listaFiltrada.length === 0">
                             <td colspan="6" class="text-center py-5 text-muted">
-                                <div v-if="cargando" class="spinner-border text-secondary" role="status"></div>
-                                <div v-else>
-                                    <i class="bi bi-inbox display-4 d-block mb-2 opacity-25"></i>
-                                    No se encontraron registros.
-                                </div>
+                                <i class="bi bi-inbox display-4 d-block mb-2 opacity-25"></i>
+                                No se encontraron registros.
                             </td>
                         </tr>
                     </tbody>
@@ -158,10 +169,13 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow rounded-3">
                 <div class="modal-header text-white border-0" style="background-color: #8B1538;">
-                    <h5 class="modal-title fw-bold">Préstamo #{{ modal.data.id }}</h5>
+                    <div>
+                        <h5 class="modal-title fw-bold" v-if="modal.data">Préstamo #{{ modal.data.id }}</h5>
+                        <small class="opacity-75" v-if="modal.data"><i class="bi bi-calendar-check me-1"></i>{{ modal.data.fecha_inicio_fmt }}</small>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" @click="cerrarModal"></button>
                 </div>
-                <div class="modal-body p-4">
+                <div class="modal-body p-4" v-if="modal.data">
                     
                     <div v-if="modal.data.es_reserva_convertida" class="alert alert-info border-0 d-flex align-items-center mb-3 shadow-sm">
                         <i class="bi bi-bookmark-star-fill me-3 fs-4 text-info"></i>
@@ -178,6 +192,7 @@
                         </div>
                     </div>
 
+                    <h6 class="fw-bold text-muted small text-uppercase mb-2">Material Prestado</h6>
                     <ul class="list-group list-group-flush border rounded bg-light">
                         <li class="list-group-item d-flex align-items-center py-3 bg-transparent" v-for="item in (modal.data.resumen_libros ? modal.data.resumen_libros.split(', ') : [])">
                             <i class="bi bi-book-fill me-2 text-secondary"></i> <span class="small fw-bold text-dark">{{ item }}</span>
@@ -186,6 +201,11 @@
                 </div>
                 <div class="modal-footer border-0 pt-0 pb-4 px-4">
                     <button class="btn btn-outline-secondary" @click="cerrarModal">Cerrar</button>
+                    <a v-if="modal.data && modal.data.estado == 'PENDIENTE' && modal.data.tipo_registro == 'PRESTAMO'" 
+                       :href="'detalle_prestamo.php?id=' + modal.data.id"
+                       class="btn text-white fw-bold shadow-sm px-4" style="background-color: #8B1538;">
+                        <i class="bi bi-box-arrow-in-down me-2"></i>Registrar devolución
+                    </a>
                 </div>
             </div>
         </div>
@@ -202,51 +222,76 @@
                 items: [], 
                 busqueda: '', 
                 filtroEstado: 'TODOS', 
-                modal: { visible: false, data: {} },
+                modal: { visible: false, data: null },
                 cargando: false
             } 
         },
         computed: {
             listaFiltrada() {
+                if (!this.items) return [];
                 return this.items.filter(p => {
-                    const textoMatch = p.solicitante.toLowerCase().includes(this.busqueda.toLowerCase()) || 
-                                       (p.resumen_libros && p.resumen_libros.toLowerCase().includes(this.busqueda.toLowerCase()));
+                    const textoMatch = 
+                        (p.solicitante && p.solicitante.toLowerCase().includes(this.busqueda.toLowerCase())) || 
+                        (p.resumen_libros && p.resumen_libros.toLowerCase().includes(this.busqueda.toLowerCase())) ||
+                        p.id.toString().includes(this.busqueda);
                     
                     let estadoMatch = true;
                     const vencido = this.esVencido(p);
 
-                    if (this.filtroEstado === 'PENDIENTE') estadoMatch = p.estado === 'PENDIENTE' && !vencido && p.tipo_registro === 'PRESTAMO';
-                    else if (this.filtroEstado === 'RESERVADO') estadoMatch = p.tipo_registro === 'RESERVA';
-                    else if (this.filtroEstado === 'VENCIDO') estadoMatch = vencido && p.estado === 'PENDIENTE' && p.tipo_registro === 'PRESTAMO';
-                    else if (this.filtroEstado === 'FINALIZADO') estadoMatch = p.estado === 'FINALIZADO';
+                    // LÓGICA DE FILTRADO UNIFICADA
+                    if (this.filtroEstado === 'PENDIENTE') {
+                        // Muestra préstamos activos NO vencidos
+                        estadoMatch = p.estado === 'PENDIENTE' && !vencido && p.tipo_registro === 'PRESTAMO';
+                    }
+                    else if (this.filtroEstado === 'RESERVADO') {
+                        // Muestra reservas pendientes
+                        estadoMatch = p.tipo_registro === 'RESERVA';
+                    }
+                    else if (this.filtroEstado === 'VENCIDO') {
+                        // Muestra préstamos vencidos
+                        estadoMatch = vencido && p.estado === 'PENDIENTE' && p.tipo_registro === 'PRESTAMO';
+                    }
+                    else if (this.filtroEstado === 'FINALIZADO') {
+                        // Muestra finalizados
+                        estadoMatch = p.estado === 'FINALIZADO';
+                    }
                     
                     return textoMatch && estadoMatch;
                 });
             }
         },
-        mounted() { this.cargarDatos(); setInterval(this.cargarDatos, 30000); },
+        mounted() { 
+            this.cargarDatos(); 
+            setInterval(this.cargarDatos, 30000); // Auto-refresh
+        },
         methods: {
             async cargarDatos() {
                 this.cargando = true;
                 try {
                     const res = await fetch('../api/historial.php');
+                    
+                    // Verificar si la respuesta es válida
+                    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+                    
                     const data = await res.json();
                     
+                    // Verificar si el backend reportó error
                     if(data.error) {
-                        console.error("Error SQL:", data.mensaje);
-                        // Si hay error SQL, la lista se vacía
+                        console.error("Error Backend:", data.mensaje);
+                        Swal.fire('Error de Sistema', data.mensaje, 'error');
                         this.items = [];
                     } else {
                         this.items = data;
                     }
                 } catch(e) { 
-                    console.error("Error JS:", e); 
+                    console.error("Error JS:", e);
+                    // Opcional: Swal.fire('Error', 'No se pudieron cargar los datos', 'error');
                 } finally {
                     this.cargando = false;
                 }
             },
             esVencido(p) {
-                if (p.estado !== 'PENDIENTE' || p.tipo_registro === 'RESERVA') return false;
+                if (!p || p.estado !== 'PENDIENTE' || p.tipo_registro === 'RESERVA') return false;
                 
                 const partes = p.fecha_fin_fmt.split('/');
                 if(partes.length < 3) return false;
@@ -262,9 +307,14 @@
                 }
                 return false;
             },
-            verDetalle(p) { this.modal.data = p; this.modal.visible = true; },
-            cerrarModal() { this.modal.visible = false; },
-            
+            verDetalle(p) { 
+                this.modal.data = p; 
+                this.modal.visible = true; 
+            },
+            cerrarModal() { 
+                this.modal.visible = false; 
+                setTimeout(() => { this.modal.data = null; }, 300);
+            },
             async entregarReserva(r) {
                 const res = await Swal.fire({
                     title: '¿Entregar Material?',

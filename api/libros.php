@@ -9,7 +9,7 @@ require_once '../config/db.php';
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 // =============================================================================
-// 0. RUTINA AUTOMÁTICA: LIMPIEZA DE RESERVAS VENCIDAS (NUEVO)
+// 0. RUTINA AUTOMÁTICA: LIMPIEZA DE RESERVAS VENCIDAS
 // =============================================================================
 // Si la hora actual es mayor a la hora de inicio + 15 min de tolerancia, se vence.
 if ($metodo == 'GET') {
@@ -24,7 +24,7 @@ if ($metodo == 'GET') {
 }
 
 // =============================================================================
-// 1. OBTENER CATEGORÍAS (MANTENIDO)
+// 1. OBTENER CATEGORÍAS
 // =============================================================================
 if ($metodo == 'GET' && isset($_GET['get_categorias'])) {
     $sql = "SELECT DISTINCT categoria FROM libros WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria ASC";
@@ -36,22 +36,29 @@ if ($metodo == 'GET' && isset($_GET['get_categorias'])) {
 }
 
 // =============================================================================
-// 2. LISTAR LIBROS CON CÁLCULO DE RESERVAS (MEJORADO)
+// 2. LISTAR LIBROS (CON FILTRO DE HORARIO INTELIGENTE)
 // =============================================================================
 if ($metodo == 'GET') {
     $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 1000; // Default alto para catálogo dinámico
     $offset = ($page - 1) * $limit;
     
     $busqueda = isset($_GET['q']) ? $conn->real_escape_string($_GET['q']) : '';
     $categoria_filtro = isset($_GET['categoria']) ? $conn->real_escape_string($_GET['categoria']) : '';
     
-    $sort = isset($_GET['sort']) ? $conn->real_escape_string($_GET['sort']) : 'id';
-    $order = isset($_GET['order']) ? $conn->real_escape_string($_GET['order']) : 'DESC';
+    // --- NUEVOS PARÁMETROS DE FILTRO TEMPORAL ---
+    // Si no se envían, asume el día de hoy completo
+    $fecha_uso = isset($_GET['fecha']) && !empty($_GET['fecha']) ? $conn->real_escape_string($_GET['fecha']) : date('Y-m-d');
+    $hora_ini = isset($_GET['hora_ini']) ? $conn->real_escape_string($_GET['hora_ini']) : '00:00:00';
+    $hora_fin = isset($_GET['hora_fin']) ? $conn->real_escape_string($_GET['hora_fin']) : '23:59:59';
+
+    // Ordenamiento
+    $sort = isset($_GET['sort']) ? $conn->real_escape_string($_GET['sort']) : 'titulo';
+    $order = isset($_GET['order']) ? $conn->real_escape_string($_GET['order']) : 'ASC';
     
     $columnas_permitidas = ['id', 'titulo', 'autor', 'stock_total', 'isbn'];
-    if (!in_array($sort, $columnas_permitidas)) $sort = 'id';
-    if ($order !== 'ASC' && $order !== 'DESC') $order = 'DESC';
+    if (!in_array($sort, $columnas_permitidas)) $sort = 'titulo';
+    if ($order !== 'ASC' && $order !== 'DESC') $order = 'ASC';
 
     $where = "WHERE 1=1";
     if ($busqueda) {
@@ -66,7 +73,7 @@ if ($metodo == 'GET') {
     $total_items = $conn->query($sql_count)->fetch_assoc()['total'];
     $total_pages = ceil($total_items / $limit);
 
-    // Consulta Principal con Subconsulta para Reservas de HOY
+    // --- CONSULTA PRINCIPAL CON LÓGICA DE CRUCE DE HORARIOS ---
     $sql = "
         SELECT 
             l.*,
@@ -75,8 +82,11 @@ if ($metodo == 'GET') {
                 FROM reservas 
                 WHERE id_libro = l.id 
                   AND estado = 'PENDIENTE' 
-                  AND fecha_uso = CURDATE()
-            ) as reservados_hoy
+                  AND fecha_uso = '$fecha_uso'
+                  AND (
+                      (hora_inicio < '$hora_fin' AND hora_fin > '$hora_ini') 
+                  )
+            ) as reservados_en_horario
         FROM libros l
         $where 
         ORDER BY $sort $order 
@@ -88,20 +98,18 @@ if ($metodo == 'GET') {
     
     while($row = $resultado->fetch_assoc()) {
         // CÁLCULO DE DISPONIBILIDAD REAL
-        // Stock Físico (en estantería)
-        $stock_fisico = (int)$row['stock_disponible'];
-        // Reservados para hoy (que aún no se han entregado)
-        $reservados_hoy = (int)$row['reservados_hoy'];
+        $stock_fisico = (int)$row['stock_disponible']; // Lo que hay en estantería hoy
+        $reservados_bloque = (int)$row['reservados_en_horario']; // Lo comprometido para ese rato
         
-        // El disponible real para NUEVOS préstamos/reservas hoy
-        $disponible_real = max(0, $stock_fisico - $reservados_hoy);
+        // El disponible real es: Físico - Reservados en ese bloque
+        $disponible_real = max(0, $stock_fisico - $reservados_bloque);
         
         // Inyectamos los datos calculados
-        $row['stock_disponible_real'] = $disponible_real; // Para mostrar al usuario
-        $row['stock_disponible_fisico'] = $stock_fisico;  // Para administración interna
+        $row['stock_disponible_real'] = $disponible_real; 
+        $row['stock_disponible_fisico'] = $stock_fisico;  
+        $row['reservados_info'] = $reservados_bloque; // Para mostrar alerta visual si hay reservas
         
-        // Sobreescribimos 'stock_disponible' para que las vistas que usan ese campo
-        // muestren automáticamente el valor protegido (restando reservas)
+        // Sobreescribimos 'stock_disponible' para compatibilidad con vistas antiguas
         $row['stock_disponible'] = $disponible_real; 
 
         $libros[] = $row;

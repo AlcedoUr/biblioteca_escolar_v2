@@ -5,8 +5,8 @@
     
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-bold" style="color: #8B1538;">Reservas de Material</h3>
-            <p class="text-muted mb-0">Gestión de separaciones y entregas.</p>
+            <h3 class="fw-bold" style="color: #8B1538;">Gestión de Reservas de Material</h3>
+            <p class="text-muted mb-0">Programación de uso de recursos bibliográficos.</p>
         </div>
         <button class="btn text-white shadow-sm fw-bold btn-hover-gold" style="background-color: #8B1538;" @click="abrirModal">
             <i class="bi bi-calendar-plus me-2"></i>Nueva Reserva
@@ -19,59 +19,47 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light text-muted small text-uppercase">
                         <tr>
-                            <th class="ps-4">Fecha / Horario</th>
+                            <th class="ps-4">Fecha Uso</th>
+                            <th>Horario</th>
                             <th>Libro</th>
                             <th class="text-center">Cant.</th>
-                            <th>Solicitante / Destino</th>
+                            <th>Destino</th>
                             <th>Estado</th>
                             <th class="text-end pe-4">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="r in reservas" :key="r.id" :class="{'bg-light opacity-75': r.estado == 'VENCIDA'}">
+                        <tr v-for="r in reservas" :key="r.id" :class="{'bg-light opacity-75': r.estado == 'VENCIDA' || r.estado == 'CANCELADA'}">
                             <td class="ps-4">
                                 <div class="fw-bold text-dark">{{ r.fecha_fmt }}</div>
-                                <div class="badge bg-light text-dark border mt-1">
-                                    <i class="bi bi-clock"></i> {{ r.h_inicio }} - {{ r.h_fin }}
-                                </div>
+                                <div class="small text-muted">{{ getDiaSemana(r.fecha_uso) }}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-clock me-1"></i> {{ r.h_inicio }} - {{ r.h_fin }}
+                                </span>
                             </td>
                             <td>
                                 <div class="fw-bold text-dark">{{ r.titulo }}</div>
+                                <div class="small text-muted" v-if="rolUsuario == 'ADMINISTRADOR'">Solicita: {{ r.solicitante }}</div>
                             </td>
-                            <td class="text-center fw-bold fs-5">{{ r.cantidad }}</td>
-                            <td>
-                                <div class="small fw-bold">{{ r.solicitante }}</div>
-                                <div class="text-muted small"><i class="bi bi-geo-alt-fill me-1"></i>{{ r.grado }} "{{ r.seccion }}"</div>
-                            </td>
+                            <td class="text-center fw-bold">{{ r.cantidad }}</td>
+                            <td>{{ r.grado }} "{{ r.seccion }}"</td>
                             <td>
                                 <span v-if="r.estado == 'PENDIENTE'" class="badge bg-warning bg-opacity-10 text-dark border border-warning">Pendiente</span>
-                                <span v-else-if="r.estado == 'ENTREGADA'" class="badge bg-success text-white shadow-sm">Entregado</span>
-                                <span v-else-if="r.estado == 'VENCIDA'" class="badge bg-danger bg-opacity-10 text-danger border border-danger">Vencida</span>
+                                <span v-else-if="r.estado == 'ENTREGADA'" class="badge bg-success text-white shadow-sm">Confirmada</span>
+                                <span v-else-if="r.estado == 'CANCELADA'" class="badge bg-secondary text-white">Cancelada</span>
+                                <span v-else class="badge bg-danger text-white shadow-sm">No Entregada</span>
                             </td>
                             <td class="text-end pe-4">
-                                <div v-if="r.estado == 'PENDIENTE'">
-                                    <button v-if="esHoy(r.fecha_uso) && rolUsuario != 'DOCENTE'" 
-                                            @click="entregarReserva(r)" 
-                                            class="btn btn-sm btn-success fw-bold text-white shadow-sm px-3 me-1 animate-pop">
-                                        <i class="bi bi-box-seam me-1"></i>Entregar
-                                    </button>
-                                    
-                                    <button v-else-if="!esHoy(r.fecha_uso)" class="btn btn-sm btn-light border text-muted" disabled title="Solo se entrega el día de uso">
-                                        <i class="bi bi-clock-history"></i> Espera
-                                    </button>
-
-                                    <button @click="cancelarReserva(r.id)" class="btn btn-sm btn-outline-danger border-0" title="Cancelar">
-                                        <i class="bi bi-x-lg"></i>
-                                    </button>
-                                </div>
-                                <div v-else>
-                                    <i class="bi bi-check2-all text-success fs-5" v-if="r.estado == 'ENTREGADA'"></i>
-                                    <i class="bi bi-x-circle text-danger fs-5" v-if="r.estado == 'VENCIDA'"></i>
-                                </div>
+                                <button v-if="r.estado == 'PENDIENTE'" @click="cancelarReserva(r.id)" class="btn btn-sm btn-outline-danger border-0" title="Cancelar Reserva">
+                                    <i class="bi bi-x-circle-fill me-1"></i> Cancelar
+                                </button>
+                                <span v-else class="text-muted small">-</span>
                             </td>
                         </tr>
                         <tr v-if="reservas.length === 0">
-                            <td colspan="6" class="text-center py-5 text-muted">No hay reservas registradas.</td>
+                            <td colspan="7" class="text-center py-5 text-muted">No hay reservas registradas.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -83,125 +71,27 @@
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header text-white" style="background-color: #8B1538;">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-journal-bookmark me-2"></i>Reservar Libros</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-calendar2-week me-2"></i>Programar Reserva</h5>
                     <button type="button" class="btn-close btn-close-white" @click="cerrarModal"></button>
                 </div>
                 <div class="modal-body p-4 bg-light">
                     
                     <div class="card border-0 shadow-sm mb-3 transition-step">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label fw-bold small text-muted mb-0">1. Seleccionar Libro</label>
+                        <div class="card-body position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <label class="form-label fw-bold small text-muted mb-0">1. ¿Cuándo lo necesita?</label>
                                 <i v-if="paso1OK" class="bi bi-check-circle-fill text-success animate-pop"></i>
                             </div>
                             
-                            <div v-if="!libroSeleccionado">
-                                <div class="input-group input-group-lg">
-                                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                                    <input type="text" class="form-control border-start-0" 
-                                           v-model="busquedaLibro" 
-                                           placeholder="Escriba título o autor..." 
-                                           @input="buscarLibros">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-5">
+                                    <input type="date" v-model="form.fecha" class="form-control fw-bold" :min="minDate" @change="validarDiaSemana">
                                 </div>
-                                
-                                <div v-if="librosEncontrados.length > 0" class="list-group mt-2 shadow-sm border-0" style="max-height: 250px; overflow-y: auto;">
-                                    <button v-for="l in librosEncontrados" @click="seleccionarLibro(l)" 
-                                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3 border-start-0 border-end-0">
-                                        <div class="d-flex align-items-center">
-                                            <div class="bg-light rounded d-flex align-items-center justify-content-center me-3 border text-secondary fw-bold" style="width: 40px; height: 50px;">
-                                                {{ l.titulo.charAt(0) }}
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold text-dark">{{ l.titulo }}</div>
-                                                <div class="small text-muted"><i class="bi bi-person me-1"></i>{{ l.autor }}</div>
-                                            </div>
-                                        </div>
-                                        <div class="text-end">
-                                            <span class="badge border mb-1 d-block" 
-                                                  :class="l.stock_disponible > 0 ? 'bg-success bg-opacity-10 text-success border-success' : 'bg-danger bg-opacity-10 text-danger border-danger'">
-                                                Disp: {{ l.stock_disponible }}
-                                            </span>
-                                            <small class="text-muted fst-italic" style="font-size: 0.7rem;">ISBN: {{ l.isbn || 'S/N' }}</small>
-                                        </div>
-                                    </button>
+                                <div class="col-md-7 d-flex align-items-center">
+                                    <small class="text-muted" v-if="form.fecha"><i class="bi bi-calendar-check me-1"></i> {{ getDiaSemana(form.fecha) }}</small>
                                 </div>
                             </div>
 
-                            <div v-else class="alert alert-success d-flex justify-content-between align-items-center mb-0 shadow-sm bg-success bg-opacity-10 border-success">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-white rounded-circle p-2 me-3 text-success shadow-sm">
-                                        <i class="bi bi-book-fill fs-4"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="fw-bold text-success mb-0">{{ libroSeleccionado.titulo }}</h6>
-                                        <small class="text-success text-opacity-75 fw-bold">Disponibles: {{ libroSeleccionado.stock_disponible }}</small>
-                                    </div>
-                                </div>
-                                <button class="btn btn-sm btn-light text-danger fw-bold shadow-sm" @click="libroSeleccionado = null">
-                                    <i class="bi bi-pencil me-1"></i>Cambiar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6 transition-step" :class="{'disabled-module': !paso1OK}">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-body position-relative">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <label class="form-label fw-bold small text-muted mb-0">2. Fecha de Uso</label>
-                                        <i v-if="paso2OK" class="bi bi-check-circle-fill text-success animate-pop"></i>
-                                    </div>
-                                    <input type="date" 
-                                           v-model="form.fecha" 
-                                           class="form-control fw-bold text-center" 
-                                           :min="minDate"
-                                           @change="validarDiaSemana">
-                                    <div class="form-text small text-center text-muted"><i class="bi bi-calendar-week me-1"></i> Lun - Vie</div>
-                                    
-                                    <div v-if="!paso1OK" class="overlay-lock"><i class="bi bi-lock-fill fs-3 text-muted"></i></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 transition-step" :class="{'disabled-module': !paso2OK}">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-body position-relative">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <label class="form-label fw-bold small text-muted mb-0">3. Detalle</label>
-                                        <i v-if="paso3OK" class="bi bi-check-circle-fill text-success animate-pop"></i>
-                                    </div>
-                                    <div class="row g-2">
-                                        <div class="col-4">
-                                            <input type="number" v-model="form.cantidad" class="form-control text-center fw-bold" placeholder="Cant." min="1" :max="libroSeleccionado ? libroSeleccionado.stock_disponible : 100">
-                                        </div>
-                                        <div class="col-4">
-                                            <select v-model="form.grado" class="form-select text-center fw-bold p-1">
-                                                <option value="" disabled>Grd</option>
-                                                <option v-for="g in listaGrados" :value="g">{{ g }}</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-4">
-                                            <select v-model="form.seccion" class="form-select text-center fw-bold p-1">
-                                                <option value="" disabled>Sec</option>
-                                                <option v-for="s in listaSecciones" :value="s">{{ s }}</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    
-                                    <div v-if="!paso2OK" class="overlay-lock"><i class="bi bi-lock-fill fs-3 text-muted"></i></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card border-0 shadow-sm transition-step" :class="{'disabled-module': !paso3OK}">
-                        <div class="card-body position-relative">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <label class="form-label fw-bold small text-muted mb-0">4. Seleccione Bloques Horarios</label>
-                                <i v-if="paso4OK" class="bi bi-check-circle-fill text-success animate-pop"></i>
-                            </div>
-                            
                             <div class="d-flex flex-wrap gap-2 justify-content-center">
                                 <div v-for="bloque in bloquesHorarios" 
                                      :key="bloque.id"
@@ -218,11 +108,107 @@
                             </div>
 
                             <div class="text-center mt-3 alert alert-light border d-inline-block w-100 mb-0 py-2" v-if="rangoHorarioTexto">
-                                <span class="text-muted small me-2">Horario:</span>
+                                <span class="text-muted small me-2">Horario Solicitado:</span>
                                 <strong class="text-vino">{{ rangoHorarioTexto }}</strong>
                             </div>
+                        </div>
+                    </div>
 
-                            <div v-if="!paso3OK" class="overlay-lock"><i class="bi bi-lock-fill fs-3 text-muted"></i></div>
+                    <div class="card border-0 shadow-sm mb-3 transition-step" :class="{'disabled-module': !paso1OK}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold small text-muted mb-0">2. Seleccionar Material</label>
+                                <i v-if="paso2OK" class="bi bi-check-circle-fill text-success animate-pop"></i>
+                            </div>
+                            
+                            <div v-if="!libroSeleccionado">
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                    <input type="text" class="form-control border-start-0" 
+                                           v-model="busquedaLibro" 
+                                           placeholder="Buscar libro disponible..." 
+                                           @input="buscarLibros">
+                                </div>
+                                
+                                <div v-if="librosEncontrados.length > 0" class="list-group mt-2 shadow-sm border-0" style="max-height: 250px; overflow-y: auto;">
+                                    <button v-for="l in librosEncontrados" @click="seleccionarLibro(l)" 
+                                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3 border-start-0 border-end-0">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-light rounded d-flex align-items-center justify-content-center me-3 border text-secondary fw-bold" style="width: 40px; height: 50px;">
+                                                {{ l.titulo.charAt(0) }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">{{ l.titulo }}</div>
+                                                <div class="small text-muted"><i class="bi bi-person me-1"></i>{{ l.autor }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <span v-if="l.stock_disponible_real > 0" class="badge bg-success bg-opacity-10 text-success border border-success mb-1 d-block">
+                                                Disp: {{ l.stock_disponible_real }}
+                                            </span>
+                                            <span v-else class="badge bg-danger bg-opacity-10 text-danger border border-danger mb-1 d-block">
+                                                Agotado
+                                            </span>
+                                            
+                                            <div v-if="l.reservados_info > 0" class="text-warning small fw-bold">
+                                                <i class="bi bi-exclamation-triangle"></i> {{ l.reservados_info }} Reservados
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div v-else class="alert alert-success d-flex justify-content-between align-items-center mb-0 shadow-sm bg-success bg-opacity-10 border-success">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-white rounded-circle p-2 me-3 text-success shadow-sm">
+                                        <i class="bi bi-book-fill fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold text-success mb-0">{{ libroSeleccionado.titulo }}</h6>
+                                        <small class="text-success text-opacity-75 fw-bold">Disponible para este horario: {{ libroSeleccionado.stock_disponible_real }}</small>
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm btn-light text-danger fw-bold shadow-sm" @click="libroSeleccionado = null">
+                                    <i class="bi bi-pencil me-1"></i>Cambiar
+                                </button>
+                            </div>
+                            
+                            <div v-if="!paso1OK" class="overlay-lock"><i class="bi bi-lock-fill fs-3 text-muted"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm transition-step" :class="{'disabled-module': !paso2OK}">
+                        <div class="card-body position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold small text-muted mb-0">3. Cantidad y Aula</label>
+                                <i v-if="paso3OK" class="bi bi-check-circle-fill text-success animate-pop"></i>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <input type="number" v-model="form.cantidad" 
+                                           class="form-control text-center fw-bold" 
+                                           placeholder="Cant." min="1" 
+                                           :max="libroSeleccionado ? libroSeleccionado.stock_disponible_real : 1">
+                                </div>
+                                <div class="col-4">
+                                    <select v-model="form.grado" class="form-select text-center fw-bold p-1">
+                                        <option value="" disabled>Grd</option>
+                                        <option v-for="g in listaGrados" :value="g">{{ g }}</option>
+                                    </select>
+                                </div>
+                                <div class="col-4">
+                                    <select v-model="form.seccion" class="form-select text-center fw-bold p-1">
+                                        <option value="" disabled>Sec</option>
+                                        <option v-for="s in listaSecciones" :value="s">{{ s }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div v-if="libroSeleccionado && form.cantidad > libroSeleccionado.stock_disponible_real" class="text-danger small mt-2 fw-bold animate-pop">
+                                <i class="bi bi-x-circle me-1"></i> Supera el stock disponible ({{ libroSeleccionado.stock_disponible_real }})
+                            </div>
+
+                            <div v-if="!paso2OK" class="overlay-lock"><i class="bi bi-lock-fill fs-3 text-muted"></i></div>
                         </div>
                     </div>
 
@@ -231,7 +217,7 @@
                     <button class="btn btn-outline-secondary fw-bold" @click="cerrarModal">Cancelar</button>
                     <button class="btn text-white fw-bold btn-gold shadow-sm px-4 transition-step" 
                             @click="guardarReserva" 
-                            :disabled="cargando || !paso4OK">
+                            :disabled="cargando || !paso3OK || (libroSeleccionado && form.cantidad > libroSeleccionado.stock_disponible_real)">
                         <span v-if="cargando" class="spinner-border spinner-border-sm me-2"></span>
                         <i v-else class="bi bi-check-lg me-2"></i>Confirmar Reserva
                     </button>
@@ -282,69 +268,122 @@
                 listaGrados: ['1ro', '2do', '3ro', '4to', '5to', '6to'],
                 listaSecciones: ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
 
+                // HORARIOS OFICIALES ACTUALIZADOS
                 bloquesHorarios: [
-                    { id: 1, label: '1° Hora', inicio: '07:45', fin: '08:30' },
-                    { id: 2, label: '2° Hora', inicio: '08:30', fin: '09:15' },
-                    { id: 3, label: '3° Hora', inicio: '09:30', fin: '10:15' },
-                    { id: 4, label: '4° Hora', inicio: '10:15', fin: '11:00' },
-                    { id: 5, label: '5° Hora', inicio: '11:15', fin: '12:00' },
-                    { id: 6, label: '6° Hora', inicio: '12:00', fin: '12:45' },
-                    { id: 7, label: '7° Hora', inicio: '12:45', fin: '13:30' }
+                    { id: 1, label: '1° Hora', inicio: '07:30', fin: '08:15' },
+                    { id: 2, label: '2° Hora', inicio: '08:15', fin: '09:00' },
+                    { id: 3, label: '3° Hora', inicio: '09:00', fin: '09:45' },
+                    { id: 4, label: 'Recreo',  inicio: '09:45', fin: '10:15' },
+                    { id: 5, label: '4° Hora', inicio: '10:30', fin: '11:15' }, // Ajustado inicio
+                    { id: 6, label: '5° Hora', inicio: '11:15', fin: '12:00' },
+                    { id: 7, label: '6° Hora', inicio: '12:00', fin: '12:45' },
+                    { id: 8, label: 'Salida',  inicio: '12:45', fin: '13:05' }
                 ],
                 bloquesSeleccionados: []
             }
         },
         computed: {
             minDate() { return new Date().toISOString().split('T')[0]; },
+            
             rangoHorarioTexto() {
                 if (this.bloquesSeleccionados.length === 0) return '';
-                const seleccion = this.bloquesHorarios.filter(b => this.bloquesSeleccionados.includes(b.id)).sort((a,b) => a.id - b.id);
+                const seleccion = this.bloquesHorarios
+                    .filter(b => this.bloquesSeleccionados.includes(b.id))
+                    .sort((a,b) => a.id - b.id);
                 return `${seleccion[0].inicio} - ${seleccion[seleccion.length - 1].fin}`;
             },
-            // Wizard
-            paso1OK() { return this.libroSeleccionado != null; },
-            paso2OK() { return this.paso1OK && this.form.fecha !== ''; },
-            paso3OK() { return this.paso2OK && this.form.cantidad > 0 && this.form.grado !== '' && this.form.seccion !== ''; },
-            paso4OK() { return this.paso3OK && this.bloquesSeleccionados.length > 0; }
+            
+            // PASOS WIZARD
+            paso1OK() { return this.form.fecha !== '' && this.bloquesSeleccionados.length > 0; },
+            paso2OK() { return this.paso1OK && this.libroSeleccionado != null; },
+            paso3OK() { return this.paso2OK && this.form.cantidad > 0 && this.form.grado !== '' && this.form.seccion !== ''; }
         },
-        mounted() { this.cargarReservas(); },
+        mounted() {
+            this.cargarReservas();
+        },
         methods: {
-            esHoy(fecha) {
-                const hoy = new Date().toISOString().split('T')[0];
-                return fecha === hoy;
-            },
             async cargarReservas() {
-                try { const res = await fetch('../api/reservar.php'); this.reservas = await res.json(); } catch(e) { console.error(e); }
+                try {
+                    const res = await fetch('../api/reservar.php');
+                    this.reservas = await res.json();
+                } catch(e) { console.error(e); }
             },
+            
             async buscarLibros() {
                 if(this.busquedaLibro.length < 3) { this.librosEncontrados = []; return; }
-                const res = await fetch(`../api/libros.php?q=${this.busquedaLibro}&limit=5`);
+                
+                // Calcular horas para filtro
+                const seleccion = this.bloquesHorarios
+                    .filter(b => this.bloquesSeleccionados.includes(b.id))
+                    .sort((a,b) => a.id - b.id);
+                
+                const hIni = seleccion[0].inicio;
+                const hFin = seleccion[seleccion.length - 1].fin;
+
+                // Consulta Inteligente a la API (Stock Real)
+                const params = new URLSearchParams({
+                    q: this.busquedaLibro,
+                    limit: 5,
+                    fecha: this.form.fecha,
+                    hora_ini: hIni,
+                    hora_fin: hFin
+                });
+
+                const res = await fetch(`../api/libros.php?${params}`);
                 const data = await res.json();
                 this.librosEncontrados = data.data;
             },
-            seleccionarLibro(l) { this.libroSeleccionado = l; this.librosEncontrados = []; this.busquedaLibro = ''; },
+
+            seleccionarLibro(l) {
+                if (l.stock_disponible_real <= 0) {
+                    Swal.fire('Agotado', 'No hay unidades disponibles en ese horario.', 'warning');
+                    return;
+                }
+                this.libroSeleccionado = l;
+                this.librosEncontrados = [];
+                this.busquedaLibro = '';
+                this.form.cantidad = 1; 
+            },
+            
             validarDiaSemana() {
                 if(!this.form.fecha) return;
                 const d = new Date(this.form.fecha + 'T00:00:00');
                 const dia = d.getDay();
-                if (dia === 0 || dia === 6) { Swal.fire('Atención', 'Solo Lunes a Viernes', 'warning'); this.form.fecha = ''; }
+                if (dia === 0 || dia === 6) {
+                    Swal.fire({ icon: 'warning', title: 'Día no permitido', text: 'Solo Lunes a Viernes.', confirmButtonColor: '#8B1538' });
+                    this.form.fecha = '';
+                }
+                // Resetear libro si cambia fecha
+                this.libroSeleccionado = null;
             },
+            
             toggleBloque(bloque) {
                 const index = this.bloquesSeleccionados.indexOf(bloque.id);
-                if (index === -1) this.bloquesSeleccionados.push(bloque.id); else this.bloquesSeleccionados.splice(index, 1);
+                if (index === -1) {
+                    this.bloquesSeleccionados.push(bloque.id);
+                } else {
+                    this.bloquesSeleccionados.splice(index, 1);
+                }
+                // Resetear libro si cambia hora
+                this.libroSeleccionado = null;
             },
+
             abrirModal() { 
                 this.modalVisible = true; 
                 this.form = { fecha: '', cantidad: 1, grado: '', seccion: '' }; 
-                this.libroSeleccionado = null; this.bloquesSeleccionados = []; 
+                this.libroSeleccionado = null; 
+                this.bloquesSeleccionados = []; 
             },
             cerrarModal() { this.modalVisible = false; },
+            
             getDiaSemana(fechaStr) {
                 const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
                 return dias[new Date(fechaStr + 'T00:00:00').getDay()];
             },
+
             async guardarReserva() {
-                if (!this.paso4OK) return;
+                if (!this.paso3OK) return;
+
                 const seleccion = this.bloquesHorarios.filter(b => this.bloquesSeleccionados.includes(b.id)).sort((a,b) => a.id - b.id);
                 const payload = {
                     id_libro: this.libroSeleccionado.id,
@@ -355,39 +394,53 @@
                     grado: this.form.grado,
                     seccion: this.form.seccion
                 };
+
                 this.cargando = true;
                 try {
-                    const res = await fetch('../api/reservar.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    const res = await fetch('../api/reservar.php', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
                     const data = await res.json();
-                    if (data.exito) { Swal.fire('Listo', 'Reserva guardada', 'success'); this.cerrarModal(); this.cargarReservas(); } 
-                    else { Swal.fire('Error', data.mensaje, 'error'); }
-                } catch(e) { Swal.fire('Error', 'Error de conexión', 'error'); } finally { this.cargando = false; }
-            },
-            async entregarReserva(r) {
-                const res = await Swal.fire({
-                    title: '¿Entregar Material?',
-                    text: `Se generará un préstamo para ${r.cantidad} copias de "${r.titulo}".`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí, entregar',
-                    confirmButtonColor: '#198754'
-                });
-                if (res.isConfirmed) {
-                    try {
-                        const api = await fetch('../api/entregar_reserva.php', {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ id_reserva: r.id })
-                        });
-                        const resp = await api.json();
-                        if (resp.exito) { Swal.fire('Entregado', resp.mensaje, 'success'); this.cargarReservas(); }
-                        else { Swal.fire('Error', resp.mensaje, 'error'); }
-                    } catch(e) { Swal.fire('Error', 'Fallo de red', 'error'); }
+                    
+                    if (data.exito) {
+                        Swal.fire({ icon: 'success', title: 'Reserva Exitosa', text: 'El material ha sido separado.', confirmButtonColor: '#198754' });
+                        this.cerrarModal();
+                        this.cargarReservas();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'No disponible', text: data.mensaje, confirmButtonColor: '#dc3545' });
+                    }
+                } catch(e) {
+                    Swal.fire('Error', 'Error de conexión', 'error');
+                } finally {
+                    this.cargando = false;
                 }
             },
+
             async cancelarReserva(id) {
-                if(confirm('¿Cancelar reserva?')) {
-                    // Podrías implementar un endpoint de cancelar, por ahora visual
-                    Swal.fire('Info', 'Funcionalidad de cancelar pendiente de backend', 'info');
+                const result = await Swal.fire({
+                    title: '¿Cancelar reserva?',
+                    text: "Esta acción liberará los libros para otros usuarios.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Sí, cancelar',
+                    cancelButtonText: 'No'
+                });
+
+                if (result.isConfirmed) {
+                    try {
+                        const res = await fetch(`../api/reservar.php?id=${id}`, { method: 'DELETE' });
+                        const data = await res.json();
+                        if (data.exito) {
+                            Swal.fire('Cancelada', 'La reserva ha sido cancelada.', 'success');
+                            this.cargarReservas();
+                        } else {
+                            Swal.fire('Error', data.mensaje, 'error');
+                        }
+                    } catch (e) {
+                        Swal.fire('Error', 'Fallo de conexión', 'error');
+                    }
                 }
             }
         }

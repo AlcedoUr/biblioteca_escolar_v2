@@ -18,7 +18,7 @@
             <div class="row g-3">
                 <div class="col-md-6">
                     <div class="input-group border rounded bg-light">
-                        <span class="input-group-text bg-transparent border-0 text-muted ps-3"><i class="bi bi-search"></i></span>
+                        <span class="input-group-text bg-transparent border-0 text-muted"><i class="bi bi-search"></i></span>
                         <input type="text" v-model="filtros.busqueda" @input="cargarDatos" class="form-control border-0 bg-transparent shadow-none" placeholder="Buscar por título, código o alumno...">
                     </div>
                 </div>
@@ -62,9 +62,9 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100 border-start border-4" style="border-color: #8B1538 !important; background-color: rgba(139, 21, 56, 0.1);">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary bg-primary bg-opacity-10">
                 <div class="card-body d-flex align-items-center p-3">
-                    <div class="me-3"><i class="bi bi-cash-coin fs-3" style="color: #8B1538;"></i></div>
+                    <div class="me-3"><i class="bi bi-cash-coin fs-3 text-primary"></i></div>
                     <div>
                         <h6 class="text-muted small fw-bold mb-0">Compensaciones (S/)</h6>
                         <h3 class="fw-bold text-dark mb-0">{{ stats.dinero.toFixed(2) }}</h3>
@@ -92,29 +92,36 @@
                     </thead>
                     <tbody>
                         <tr v-for="item in incidencias" :key="item.id_detalle">
+                            
                             <td class="ps-4">
                                 <div class="fw-bold text-dark">{{ item.titulo }}</div>
                                 <small class="text-muted font-monospace">ISBN: {{ item.isbn || 'S/N' }}</small>
                             </td>
+
                             <td>
                                 <div class="small text-dark fw-bold">{{ item.solicitante }}</div>
                                 <div class="text-muted" style="font-size: 0.7rem;">{{ item.rol_solicitante }}</div>
                             </td>
+
                             <td>
                                 <span v-if="item.causante_display !== '-'" class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2">
                                     {{ item.causante_display }}
                                 </span>
                                 <span v-else class="text-muted small">-</span>
                             </td>
+
                             <td class="small text-muted">{{ item.fecha_incidente }}</td>
+
                             <td>
                                 <span v-if="item.tipo_incidente == 'PERDIDO'" class="badge bg-dark text-white"><i class="bi bi-x-circle me-1"></i> Extravío</span>
                                 <span v-else class="badge bg-warning text-dark"><i class="bi bi-bandaid me-1"></i> Dañado</span>
                             </td>
+
                             <td>
                                 <span v-if="item.estado_resolucion == 'PENDIENTE'" class="badge bg-warning bg-opacity-10 text-dark border border-warning">Pendiente</span>
                                 <span v-else class="badge bg-success bg-opacity-10 text-success border border-success">Regularizado</span>
                             </td>
+
                             <td>
                                 <div v-if="item.estado_resolucion == 'RESUELTO'" class="small">
                                     <div class="fw-bold text-success">{{ item.tipo_resolucion }}</div>
@@ -122,15 +129,16 @@
                                 </div>
                                 <div v-else class="text-muted small fst-italic">-</div>
                             </td>
+
                             <td class="text-end pe-4">
                                 <button v-if="item.estado_resolucion == 'PENDIENTE'" 
                                         @click="abrirResolver(item)" 
-                                        class="btn btn-sm text-white fw-bold shadow-sm" 
-                                        style="background-color: #8B1538;"
+                                        class="btn btn-sm btn-primary shadow-sm fw-bold" 
                                         title="Resolver Caso">
                                     <i class="bi bi-check2-square me-1"></i>Resolver
                                 </button>
-                                <button v-else class="btn btn-sm btn-light border text-muted" disabled>
+                                <button v-else 
+                                        class="btn btn-sm btn-light border text-muted" disabled>
                                     <i class="bi bi-archive-fill"></i>
                                 </button>
                             </td>
@@ -147,14 +155,14 @@
     <div v-if="modal.visible" class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow rounded-3">
-                <div class="modal-header text-white border-0" style="background-color: #8B1538;">
+                <div class="modal-header bg-primary text-white border-0">
                     <h5 class="modal-title fw-bold">Resolver Incidencia</h5>
                     <button type="button" class="btn-close btn-close-white" @click="modal.visible = false"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="alert alert-light border mb-3 small">
                         <strong>Libro:</strong> {{ modal.data.titulo }}<br>
-                        <strong>Incidente:</strong> <span class="text-danger fw-bold">{{ modal.data.tipo_incidente }}</span>
+                        <strong>Incidente:</strong> {{ modal.data.tipo_incidente }}
                     </div>
 
                     <div class="mb-3">
@@ -163,7 +171,7 @@
                             <option value="">-- Seleccione --</option>
                             <option value="REPOSICION">Reposición (Trajo libro nuevo)</option>
                             <option value="PAGO">Pago Económico (Compensación)</option>
-                            <option value="REPARACION" v-if="modal.data.tipo_incidente !== 'PERDIDO'">Reparación (Arreglado por alumno)</option>
+                            <option value="REPARACION">Reparación (Arreglado por alumno)</option>
                             <option value="CONDONADO">Condonado (Sin sanción)</option>
                         </select>
                     </div>
@@ -183,7 +191,7 @@
                 </div>
                 <div class="modal-footer border-0 pt-0 px-4 pb-4">
                     <button class="btn btn-light text-secondary" @click="modal.visible = false">Cancelar</button>
-                    <button class="btn text-white fw-bold px-4" style="background-color: #8B1538;" @click="guardarResolucion">
+                    <button class="btn btn-primary fw-bold px-4" @click="guardarResolucion">
                         <i class="bi bi-save-fill me-2"></i>Guardar y Archivar
                     </button>
                 </div>
@@ -200,36 +208,45 @@
         data() {
             return {
                 incidencias: [],
-                filtros: { busqueda: '', estado: 'PENDIENTE' }, 
+                filtros: { busqueda: '', estado: 'PENDIENTE' }, // Por defecto ver pendientes
                 stats: { pendientes: 0, resueltos: 0, dinero: 0 },
                 modal: { visible: false, data: {} },
                 formResolucion: { tipo: '', monto: 0, observaciones: '' }
             }
         },
-        mounted() { this.cargarDatos(); },
+        mounted() {
+            this.cargarDatos();
+        },
         methods: {
             async cargarDatos() {
                 try {
-                    const params = new URLSearchParams({ q: this.filtros.busqueda, estado: this.filtros.estado });
+                    const params = new URLSearchParams({
+                        q: this.filtros.busqueda,
+                        estado: this.filtros.estado
+                    });
                     const res = await fetch(`../api/incidencias.php?${params}`);
                     const data = await res.json();
                     this.incidencias = data.data;
                     this.stats = data.stats;
                 } catch(e) { console.error(e); }
             },
+            
             abrirResolver(item) {
                 this.modal.data = item;
                 this.formResolucion = { tipo: '', monto: 0, observaciones: '' };
                 this.modal.visible = true;
             },
+
             async guardarResolucion() {
                 if (!this.formResolucion.tipo) return Swal.fire('Error', 'Seleccione un tipo de resolución', 'warning');
+
                 const payload = {
                     id_detalle: this.modal.data.id_detalle,
                     tipo_resolucion: this.formResolucion.tipo,
                     monto: this.formResolucion.monto,
                     observaciones: this.formResolucion.observaciones
                 };
+
                 try {
                     const res = await fetch('../api/incidencias.php', {
                         method: 'POST',

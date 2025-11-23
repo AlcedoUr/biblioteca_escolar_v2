@@ -6,15 +6,16 @@ session_start();
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 // =============================================================================
-// 1. LISTAR RESERVAS (GET) - SOLO PENDIENTES
+// 1. LISTAR RESERVAS (GET) - HISTORIAL COMPLETO
 // =============================================================================
 if ($metodo == 'GET') {
     $id_usuario = $_SESSION['user_id'] ?? 0;
     $rol = $_SESSION['user_rol'] ?? '';
     
+    // Si es DOCENTE, solo ve sus reservas. Si es ADMIN/BIBLIO, ve todas.
     $filtro_usuario = ($rol == 'DOCENTE') ? "AND r.id_usuario_solicitante = (SELECT id FROM usuarios WHERE id = $id_usuario)" : "";
 
-    // CAMBIO: Solo mostramos 'PENDIENTE'. Las entregadas van a Historial de Préstamos.
+    // MEJORA: Quitamos "WHERE r.estado = 'PENDIENTE'" para ver el historial completo (Vencidas, Canceladas, etc.)
     $sql = "
         SELECT 
             r.id, 
@@ -32,8 +33,8 @@ if ($metodo == 'GET') {
         JOIN libros l ON r.id_libro = l.id
         JOIN usuarios u ON r.id_usuario_solicitante = u.id
         LEFT JOIN personas p ON u.id_persona = p.id
-        WHERE r.estado = 'PENDIENTE' $filtro_usuario
-        ORDER BY r.fecha_uso ASC, r.hora_inicio ASC
+        WHERE 1=1 $filtro_usuario
+        ORDER BY r.fecha_uso DESC, r.hora_inicio ASC
     ";
     
     $res = $conn->query($sql);
@@ -48,7 +49,7 @@ if ($metodo == 'GET') {
 }
 
 // =============================================================================
-// 2. CREAR RESERVA (POST) - (Igual que antes)
+// 2. CREAR RESERVA (POST)
 // =============================================================================
 if ($metodo == 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -76,7 +77,7 @@ if ($metodo == 'POST') {
     
     $stock_total = (int)$libro['stock_total'];
 
-    // Cálculos de disponibilidad
+    // Cálculos de disponibilidad (Conflictos con préstamos y otras reservas)
     $sql_prestamos = "SELECT SUM(dp.cantidad) FROM detalle_prestamo dp JOIN prestamos p ON dp.id_prestamo = p.id WHERE dp.id_libro = $id_libro AND dp.estado_devolucion = 'PENDIENTE' AND p.fecha_devolucion_pactada >= '$fecha'";
     $ocupados_prestamos = $conn->query($sql_prestamos)->fetch_row()[0] ?? 0;
 
@@ -98,6 +99,33 @@ if ($metodo == 'POST') {
 
     if ($stmt->execute()) {
         echo json_encode(['exito' => true, 'mensaje' => 'Reserva registrada']);
+    } else {
+        echo json_encode(['exito' => false, 'mensaje' => 'Error BD: ' . $conn->error]);
+    }
+    exit;
+}
+
+// =============================================================================
+// 3. CANCELAR RESERVA (DELETE) - MEJORA AGREGADA
+// =============================================================================
+if ($metodo == 'DELETE') {
+    $id = $_GET['id'] ?? 0;
+    
+    if (!$id) {
+        echo json_encode(['exito' => false, 'mensaje' => 'ID no proporcionado']);
+        exit;
+    }
+
+    // Solo cancelamos si está PENDIENTE. Si ya fue entregada o vencida, no se toca por integridad.
+    $sql = "UPDATE reservas SET estado = 'CANCELADA' WHERE id = $id AND estado = 'PENDIENTE'";
+    
+    if ($conn->query($sql)) {
+        if ($conn->affected_rows > 0) {
+            echo json_encode(['exito' => true, 'mensaje' => 'Reserva cancelada correctamente.']);
+        } else {
+            // Si no afectó filas, es porque el ID no existe o el estado ya no era PENDIENTE
+            echo json_encode(['exito' => false, 'mensaje' => 'No se pudo cancelar (tal vez ya no está pendiente).']);
+        }
     } else {
         echo json_encode(['exito' => false, 'mensaje' => 'Error BD: ' . $conn->error]);
     }

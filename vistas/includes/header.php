@@ -163,7 +163,7 @@ if ($rol == 'DOCENTE' && !in_array($pagina_actual, $paginas_docente)) {
                     <i class="bi bi-calendar-check"></i> Reservas
                 </a>
                 <a href="incidencias.php" class="nav-link <?php echo ($pagina_actual == 'incidencias.php') ? 'active' : ''; ?>">
-                    <i class="bi bi-exclamation-triangle"></i> Incidencias
+                    <i class="bi bi-exclamation-triangle"></i> Material Extraviado/Dañado
                 </a>
                 <a href="reportes.php" class="nav-link <?php echo ($pagina_actual == 'reportes.php') ? 'active' : ''; ?>">
                     <i class="bi bi-bar-chart"></i> Reportes
