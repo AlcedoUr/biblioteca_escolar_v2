@@ -1,29 +1,13 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+// Incluye el gestor de sesiones y permisos.
+// Este script se encarga de verificar el login y los roles de acceso a cada vista.
+require_once __DIR__ . '/../../config/session_check.php';
 
-// 1. VALIDAR SESIÓN
-if (!isset($_SESSION['user_id'])) { 
-    header('Location: ../index.php'); 
-    exit; 
-}
-
+// La sesión ya fue iniciada y validada en session_check.php.
+// Solo recuperamos las variables necesarias para la vista.
 $rol = $_SESSION['user_rol'];
 $nombre_usuario = $_SESSION['user_nombre'] ?? 'Usuario';
 $pagina_actual = basename($_SERVER['PHP_SELF']);
-
-// 2. SEGURIDAD DE NAVEGACIÓN
-// Si es ESTUDIANTE y trata de entrar a algo que NO sea biblioteca_virtual.php, lo regresamos.
-if ($rol == 'ESTUDIANTE' && $pagina_actual != 'biblioteca_virtual.php') {
-    header('Location: biblioteca_virtual.php');
-    exit;
-}
-
-// Si es DOCENTE, restringimos acceso (Lista blanca)
-$paginas_docente = ['catalogo.php', 'biblioteca_virtual.php', 'reservas.php'];
-if ($rol == 'DOCENTE' && !in_array($pagina_actual, $paginas_docente)) {
-    header('Location: catalogo.php'); 
-    exit;
-}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -123,47 +107,52 @@ if ($rol == 'DOCENTE' && !in_array($pagina_actual, $paginas_docente)) {
 
         <nav class="nav flex-column sidebar-menu">
             
+            <?php // --- MENÚ DOCENTE --- ?>
             <?php if ($rol == 'DOCENTE'): ?>
-                <div class="text-white-50 small fw-bold mt-3 mb-1 ps-3">DOCENTES</div>
+                <div class="text-white-50 small fw-bold mt-3 mb-1 ps-3">MENÚ DOCENTE</div>
                 <a href="catalogo.php" class="nav-link <?php echo ($pagina_actual == 'catalogo.php') ? 'active' : ''; ?>">
-                    <i class="bi bi-search"></i> Catálogo Físico
-                </a>
-                <a href="biblioteca_virtual.php" class="nav-link <?php echo ($pagina_actual == 'biblioteca_virtual.php') ? 'active' : ''; ?>">
-                    <i class="bi bi-cloud-download"></i> Recursos Digitales
+                    <i class="bi bi-search"></i> Catálogo de Libros
                 </a>
                 <a href="reservas.php" class="nav-link <?php echo ($pagina_actual == 'reservas.php') ? 'active' : ''; ?>">
-                    <i class="bi bi-calendar-plus"></i> Reservar Material
+                    <i class="bi bi-calendar-plus"></i> Mis Reservas
+                </a>
+                <a href="mi_historial.php" class="nav-link <?php echo ($pagina_actual == 'mi_historial.php') ? 'active' : ''; ?>">
+                    <i class="bi bi-clock-history"></i> Mi Historial
                 </a>
             <?php endif; ?>
 
+            <?php // --- MENÚ BIBLIOTECARIO Y ADMINISTRADOR --- ?>
             <?php if ($rol == 'ADMINISTRADOR' || $rol == 'BIBLIOTECARIO'): ?>
                 <a href="dashboard.php" class="nav-link <?php echo ($pagina_actual == 'dashboard.php') ? 'active' : ''; ?>">
                     <i class="bi bi-grid"></i> Dashboard
                 </a>
                 
                 <div class="text-white-50 small fw-bold mt-3 mb-1 ps-3">GESTIÓN</div>
-                <a href="libros.php" class="nav-link <?php echo ($pagina_actual == 'libros.php') ? 'active' : ''; ?>">
-                    <i class="bi bi-book"></i> Catálogo Libros
+                <a href="libros.php" class="nav-link <?php echo ($pagina_actual == 'libros.php' || $pagina_actual == 'catalogo.php') ? 'active' : ''; ?>">
+                    <i class="bi bi-book"></i> Libros y Catálogo
                 </a>
-                <a href="biblioteca_virtual.php" class="nav-link <?php echo ($pagina_actual == 'biblioteca_virtual.php') ? 'active' : ''; ?>">
-                    <i class="bi bi-cloud-download"></i> Biblio. Virtual
+                 <a href="biblioteca_virtual.php" class="nav-link <?php echo ($pagina_actual == 'biblioteca_virtual.php') ? 'active' : ''; ?>">
+                    <i class="bi bi-cloud-download"></i> Biblioteca Virtual
                 </a>
                 <a href="personas.php" class="nav-link <?php echo ($pagina_actual == 'personas.php') ? 'active' : ''; ?>">
                     <i class="bi bi-people"></i> Usuarios
                 </a>
+                
+                <?php if ($rol == 'ADMINISTRADOR'): // Solo el admin puede ver los accesos ?>
+                <a href="accesos.php" class="nav-link <?php echo ($pagina_actual == 'accesos.php') ? 'active' : ''; ?>">
+                    <i class="bi bi-key"></i> Control de Accesos
+                </a>
+                <?php endif; ?>
 
-<a href="accesos.php" class="nav-link <?php echo ($pagina_actual == 'accesos.php') ? 'active' : ''; ?>">
-    <i class="bi bi-key"></i> Accesos Docentes
-</a>
                 <div class="text-white-50 small fw-bold mt-3 mb-1 ps-3">CIRCULACIÓN</div>
                 <a href="historial.php" class="nav-link <?php echo ($pagina_actual == 'historial.php') ? 'active' : ''; ?>">
-                    <i class="bi bi-arrow-left-right"></i> Préstamos
+                    <i class="bi bi-arrow-left-right"></i> Préstamos y Devoluciones
                 </a>
                 <a href="reservas.php" class="nav-link <?php echo ($pagina_actual == 'reservas.php') ? 'active' : ''; ?>">
-                    <i class="bi bi-calendar-check"></i> Reservas
+                    <i class="bi bi-calendar-check"></i> Gestionar Reservas
                 </a>
                 <a href="incidencias.php" class="nav-link <?php echo ($pagina_actual == 'incidencias.php') ? 'active' : ''; ?>">
-                    <i class="bi bi-exclamation-triangle"></i> Material Extraviado/Dañado
+                    <i class="bi bi-exclamation-triangle"></i> Incidencias
                 </a>
                 <a href="reportes.php" class="nav-link <?php echo ($pagina_actual == 'reportes.php') ? 'active' : ''; ?>">
                     <i class="bi bi-bar-chart"></i> Reportes
@@ -172,7 +161,8 @@ if ($rol == 'DOCENTE' && !in_array($pagina_actual, $paginas_docente)) {
 
         </nav>
         
-        <div class="p-3 border-top border-white border-opacity-10">
+        <!-- BOTÓN DE SALIR -->
+        <div class="p-3 mt-auto border-top border-white border-opacity-10">
             <a href="../api/logout.php" class="btn btn-outline-light w-100 btn-sm d-flex align-items-center justify-content-center gap-2">
                 <i class="bi bi-box-arrow-left"></i> Cerrar Sesión
             </a>

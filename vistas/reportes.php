@@ -43,7 +43,7 @@
                                 <i class="bi bi-people text-danger fs-4"></i>
                             </div>
                         </div>
-                        <h5 class="fw-bold mb-2 text-dark">Reporte de Morosos</h5>
+                        <h5 class="fw-bold mb-2 text-dark">Reporte de Deudores</h5>
                         <p class="text-muted small mb-4 flex-grow-1">Usuarios con préstamos vencidos, detalles de atrasos y material pendiente de devolución.</p>
                         
                        <a href="reporte_morosos.php" class="btn text-white w-100 py-2 fw-bold shadow-sm" 
