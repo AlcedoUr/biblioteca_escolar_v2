@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 22-11-2025 a las 19:29:16
+-- Tiempo de generación: 23-11-2025 a las 01:56:47
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -66,7 +66,9 @@ INSERT INTO `detalle_prestamo` (`id`, `id_prestamo`, `id_libro`, `id_persona_cau
 (18, 7, 5, NULL, 1, 'DAÑADO', 'RESUELTO', 'CONDONADO', 0.00, '', '2025-11-22 11:20:58'),
 (19, 13, 9, 2, 19, 'BUENO', 'PENDIENTE', 'NINGUNA', 0.00, NULL, NULL),
 (20, 8, 8, 2, 1, 'PERDIDO', 'PENDIENTE', 'NINGUNA', 0.00, NULL, NULL),
-(21, 8, 8, 5, 1, 'PERDIDO', 'PENDIENTE', 'NINGUNA', 0.00, NULL, NULL);
+(21, 8, 8, 5, 1, 'PERDIDO', 'PENDIENTE', 'NINGUNA', 0.00, NULL, NULL),
+(22, 14, 2, 5, 1, 'BUENO', 'PENDIENTE', 'NINGUNA', 0.00, NULL, NULL),
+(23, 15, 2, 5, 1, 'BUENO', 'PENDIENTE', 'NINGUNA', 0.00, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -171,7 +173,9 @@ INSERT INTO `prestamos` (`id`, `id_persona_solicitante`, `id_usuario_bibliotecar
 (10, 3, 1, '2025-11-21 19:09:18', '2025-11-24', '2025-11-22 11:34:41', 'FINALIZADO', 'Tipo: Domicilio'),
 (11, 2, 1, '2025-11-21 19:16:37', '2025-11-24', '2025-11-22 11:22:06', 'FINALIZADO', 'Tipo: Domicilio | Devolución límite a las: 07:30 | Destino: Aula 1ro \"E\"'),
 (12, 3, 1, '2025-11-21 19:16:56', '2025-11-24', '2025-11-22 10:52:59', 'FINALIZADO', 'Tipo: Domicilio | Devolución límite a las: 13:05'),
-(13, 2, 1, '2025-11-21 19:26:43', '2025-11-26', '2025-11-22 11:16:22', 'FINALIZADO', 'Tipo: Domicilio | Devolución límite a las: 09:45 | Destino: Aula 2do \"B\"');
+(13, 2, 1, '2025-11-21 19:26:43', '2025-11-26', '2025-11-22 11:16:22', 'FINALIZADO', 'Tipo: Domicilio | Devolución límite a las: 09:45 | Destino: Aula 2do \"B\"'),
+(14, 5, 1, '2025-11-22 14:04:51', '2025-11-26', '2025-11-22 19:41:17', 'FINALIZADO', 'Tipo: Domicilio (Días) | Destino: Aula 3ro \"C\" | Devolución límite a las: 10:20'),
+(15, 5, 1, '2025-11-22 14:04:53', '2025-11-26', '2025-11-22 19:41:11', 'FINALIZADO', 'Tipo: Domicilio (Días) | Destino: Aula 3ro \"C\" | Devolución límite a las: 10:20');
 
 -- --------------------------------------------------------
 
@@ -200,7 +204,8 @@ CREATE TABLE `reservas` (
 INSERT INTO `reservas` (`id`, `id_libro`, `id_usuario_solicitante`, `fecha_reserva`, `fecha_uso`, `estado`, `cantidad`, `hora_inicio`, `hora_fin`, `grado`, `seccion`) VALUES
 (1, 8, 4, '2025-11-22 12:57:27', '2025-11-23', 'PENDIENTE', 1, '07:45:00', '08:30:00', 'a', 'c'),
 (2, 6, 1, '2025-11-22 13:01:23', '2025-11-25', 'PENDIENTE', 20, '07:45:00', '10:15:00', '1', 'c'),
-(3, 2, 1, '2025-11-22 13:20:10', '2025-11-24', 'PENDIENTE', 1, '07:45:00', '10:15:00', '1ro', 'F');
+(3, 2, 1, '2025-11-22 13:20:10', '2025-11-24', 'PENDIENTE', 1, '07:45:00', '10:15:00', '1ro', 'F'),
+(4, 2, 1, '2025-11-22 14:03:02', '2025-11-26', 'CANCELADA', 4, '12:45:00', '13:30:00', '5to', 'A');
 
 -- --------------------------------------------------------
 
@@ -286,7 +291,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `detalle_prestamo`
 --
 ALTER TABLE `detalle_prestamo`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT de la tabla `libros`
@@ -304,13 +309,13 @@ ALTER TABLE `personas`
 -- AUTO_INCREMENT de la tabla `prestamos`
 --
 ALTER TABLE `prestamos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT de la tabla `reservas`
 --
 ALTER TABLE `reservas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
