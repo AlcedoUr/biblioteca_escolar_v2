@@ -47,8 +47,8 @@ if ($tipo == 'extraviados') {
 // ==========================================
 if ($tipo == 'uso') {
     // --- FILTROS ---
-    $inicio = $_GET['fecha_inicio'] ?? date('Y-m-01', strtotime('-5 months')); // Default: Últimos 6 meses
-    $fin = $_GET['fecha_fin'] ?? date('Y-m-d');
+    $inicio = $conn->real_escape_string($_GET['fecha_inicio'] ?? date('Y-m-01', strtotime('-5 months')));
+    $fin = $conn->real_escape_string($_GET['fecha_fin'] ?? date('Y-m-d'));
     $cat = $_GET['categoria'] ?? '';
     $rol = $_GET['rol'] ?? '';
 

@@ -8,9 +8,9 @@
             <h3 class="fw-bold" style="color: #8B1538;">Gestión de Incidencias</h3>
             <p class="text-muted small mb-0">Control de material dañado, extraviado y sus resoluciones.</p>
         </div>
-        <a href="historial.php" class="btn text-white px-4 py-2 fw-bold shadow-sm" style="background-color: #8B1538;">
-            <i class="bi bi-plus-lg me-2"></i>Reportar Nueva Incidencia
-        </a>
+        <button @click="nuevaIncidencia" class="btn text-white px-4 py-2 fw-bold shadow-sm" style="background-color: #8B1538;">
+            <i class="bi bi-exclamation-circle me-2"></i>Reportar Incidencia
+        </button>
     </div>
 
     <div class="card border-0 shadow-sm mb-4 bg-white">
@@ -208,7 +208,7 @@
         data() {
             return {
                 incidencias: [],
-                filtros: { busqueda: '', estado: 'PENDIENTE' }, // Por defecto ver pendientes
+                filtros: { busqueda: '', estado: 'PENDIENTE' },
                 stats: { pendientes: 0, resueltos: 0, dinero: 0 },
                 modal: { visible: false, data: {} },
                 formResolucion: { tipo: '', monto: 0, observaciones: '' }
@@ -218,6 +218,31 @@
             this.cargarDatos();
         },
         methods: {
+            // --- NUEVA FUNCIÓN EXPLICATIVA ---
+            nuevaIncidencia() {
+                Swal.fire({
+                    title: '¿Cómo reportar?',
+                    html: `
+                        <div class="text-start">
+                            Las incidencias se generan desde el <b>Historial de Préstamos</b>.<br><br>
+                            1. Vaya al Historial.<br>
+                            2. Busque el préstamo activo.<br>
+                            3. Haga clic en <b>'Devolver'</b>.<br>
+                            4. Seleccione el estado <b>'Dañado'</b> o <b>'Perdido'</b>.
+                        </div>
+                    `,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ir al Historial ahora',
+                    confirmButtonColor: '#8B1538',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'historial.php';
+                    }
+                });
+            },
+
             async cargarDatos() {
                 try {
                     const params = new URLSearchParams({

@@ -1,6 +1,11 @@
 <?php
 session_start();
-
+// --- SEGURIDAD: NO CACHÉ ---
+// Esto obliga al navegador a pedir los datos al servidor siempre,
+// evitando que alguien vea pantallas viejas al dar "Atrás".
+header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1.
+header("Pragma: no-cache"); // HTTP 1.0.
+header("Expires: 0"); // Proxies.
 // --- 1. VERIFICACIÓN DE SESIÓN ACTIVA ---
 // Si no hay un rol definido en la sesión, significa que el usuario no ha iniciado sesión.
 // Lo redirigimos a la página de login (index.php).

@@ -20,17 +20,16 @@ $tipo = $data['tipo_prestamo']; // 'HORAS' o 'DIAS'
 $fecha_dev = $data['fecha_devolucion'];
 
 // Obtener horas explícitas del frontend
-// Si es DIAS, hora_inicio suele ser la hora actual, pero lo importante es la hora_fin
 $hora_inicio_raw = $data['hora_inicio'] ?? date('H:i');
 $hora_fin_raw = $data['hora_fin']; 
 
-// Calcular hora límite real (Hora Fin + 10 minutos de tolerancia)
+// Calcular hora límite real
 $timeObj = new DateTime($fecha_dev . ' ' . $hora_fin_raw);
 $timeObj->modify('+10 minutes');
 $hora_limite_fmt = $timeObj->format('H:i'); 
-$fecha_hora_fin_real = $timeObj->format('Y-m-d H:i:s'); // Timestamp completo para validación SQL
+$fecha_hora_fin_real = $timeObj->format('Y-m-d H:i:s'); 
 
-// Construir observación detallada
+// Construir observación
 $obs_parts = [];
 if ($tipo == 'HORAS') {
     $obs_parts[] = "Tipo: En Aula";
@@ -47,12 +46,17 @@ $observaciones = implode(" | ", $obs_parts);
 $conn->begin_transaction();
 
 try {
-    // 2. VALIDAR CONFLICTOS CON RESERVAS FUTURAS
-    // Verifica si hay reservas confirmadas que inicien ANTES de que este préstamo sea devuelto.
+    // 2. VALIDAR CONFLICTOS Y CANTIDADES (SEGURIDAD)
     
     foreach ($libros as $item) {
         $id_libro = $item['id'];
-        $cant_solicitada = $item['cantidad'];
+        $cant_solicitada = (int)$item['cantidad'];
+
+        // --- SEGURIDAD: VALIDACIÓN DE CANTIDAD ---
+        if ($cant_solicitada <= 0) {
+            throw new Exception("Error de seguridad: La cantidad para el libro '{$item['titulo']}' debe ser mayor a 0.");
+        }
+        // -----------------------------------------
 
         // A. Obtener stock físico total (Inventario)
         $res_stock = $conn->query("SELECT stock_total FROM libros WHERE id = $id_libro");
@@ -63,7 +67,6 @@ try {
         $en_estanteria = $res_disp->fetch_row()[0];
 
         // C. Calcular reservas futuras que chocan con este préstamo
-        // Buscamos reservas PENDIENTES cuyo inicio sea <= a mi fecha de devolución real
         $sql_conflicto = "
             SELECT SUM(cantidad) 
             FROM reservas 
@@ -76,8 +79,7 @@ try {
         $res_conf = $conn->query($sql_conflicto);
         $libros_reservados_futuro = $res_conf->fetch_row()[0] ?? 0;
 
-        // D. Validación Final:
-        // Disponibles Reales = (Físicos en Estantería) - (Reservas que entran en conflicto)
+        // D. Validación Final
         if (($en_estanteria - $libros_reservados_futuro) < $cant_solicitada) {
             throw new Exception("Conflicto de Stock: El libro '{$item['titulo']}' tiene reservas futuras ($libros_reservados_futuro) que impiden este préstamo hasta las $hora_limite_fmt.");
         }
@@ -95,18 +97,20 @@ try {
     $stmt_upd = $conn->prepare("UPDATE libros SET stock_disponible = stock_disponible - ? WHERE id = ?");
 
     foreach ($libros as $item) {
+        $cant_final = (int)$item['cantidad']; // Asegurar entero de nuevo por si acaso
+
         // Verificación final de stock (concurrencia)
         $check = $conn->query("SELECT stock_disponible FROM libros WHERE id = " . $item['id']);
-        if ($check->fetch_row()[0] < $item['cantidad']) {
+        if ($check->fetch_row()[0] < $cant_final) {
              throw new Exception("Stock insuficiente para '{$item['titulo']}' al momento de guardar.");
         }
 
         // Guardar detalle
-        $stmt_det->bind_param("iii", $id_prestamo, $item['id'], $item['cantidad']);
+        $stmt_det->bind_param("iii", $id_prestamo, $item['id'], $cant_final);
         $stmt_det->execute();
 
         // Restar stock
-        $stmt_upd->bind_param("ii", $item['cantidad'], $item['id']);
+        $stmt_upd->bind_param("ii", $cant_final, $item['id']);
         $stmt_upd->execute();
     }
 

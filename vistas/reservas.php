@@ -259,7 +259,7 @@
                 modalVisible: false,
                 cargando: false,
                 
-                // Variables para lógica de preselección
+                // Variables para la preselección
                 preBookId: null,
                 
                 busquedaLibro: '',
@@ -271,15 +271,15 @@
                 listaGrados: ['1ro', '2do', '3ro', '4to', '5to', '6to'],
                 listaSecciones: ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
 
-                // HORARIOS ACTUALIZADOS (Lógica corregida: Recreo -> 4ta Hora, y siguientes)
+                // HORARIOS OFICIALES
                 bloquesHorarios: [
                     { id: 1, label: '1° Hora', inicio: '07:30', fin: '08:15' },
                     { id: 2, label: '2° Hora', inicio: '08:15', fin: '09:00' },
                     { id: 3, label: '3° Hora', inicio: '09:00', fin: '09:45' },
-                    { id: 4, label: '4° Hora', inicio: '09:45', fin: '10:15' }, // Antes Recreo
-                    { id: 5, label: '5° Hora', inicio: '10:30', fin: '11:15' }, // Antes 4°
-                    { id: 6, label: '6° Hora', inicio: '11:15', fin: '12:00' }, // Antes 5°
-                    { id: 7, label: '7° Hora', inicio: '12:00', fin: '12:45' }, // Antes 6°
+                    { id: 4, label: '4° Hora', inicio: '09:45', fin: '10:15' }, 
+                    { id: 5, label: '5° Hora', inicio: '10:30', fin: '11:15' }, 
+                    { id: 6, label: '6° Hora', inicio: '11:15', fin: '12:00' },
+                    { id: 7, label: '7° Hora', inicio: '12:00', fin: '12:45' },
                     { id: 8, label: 'Salida',  inicio: '12:45', fin: '13:05' }
                 ],
                 bloquesSeleccionados: []
@@ -344,7 +344,6 @@
                 const hIni = seleccion[0].inicio;
                 const hFin = seleccion[seleccion.length - 1].fin;
 
-                // AUMENTADO EL LÍMITE A 50 PARA ASEGURAR QUE EL LIBRO APAREZCA
                 const params = new URLSearchParams({
                     q: this.busquedaLibro,
                     limit: 50, 
@@ -357,22 +356,19 @@
                 const data = await res.json();
                 this.librosEncontrados = data.data;
 
-                // --- Lógica de Auto-selección Robusta ---
-                if (this.preBookId) {
-                    // Buscamos coincidencia exacta por ID
-                    const encontrado = this.librosEncontrados.find(l => l.id == this.preBookId);
-                    
+                // --- Si había una selección previa o preselección, intentamos recuperar ---
+                const idASeleccionar = this.preBookId; // Solo usamos preBookId para la primera vez
+                if (idASeleccionar) {
+                    const encontrado = this.librosEncontrados.find(l => l.id == idASeleccionar);
                     if (encontrado) {
-                        // Si existe pero no hay stock en ese horario, avisamos
                         if (encontrado.stock_disponible_real <= 0) {
                             Swal.fire('No disponible', `El libro "${encontrado.titulo}" está agotado en el horario seleccionado.`, 'warning');
-                            this.preBookId = null; // Liberar para que elija otro
+                            this.preBookId = null; 
                         } else {
                             this.seleccionarLibro(encontrado);
                             this.preBookId = null; 
                         }
                     } 
-                    // Si no se encuentra en la lista, es posible que el filtro 'q' sea muy estricto o el ID no coincida
                 }
             },
 
@@ -383,7 +379,8 @@
                 }
                 this.libroSeleccionado = l;
                 this.librosEncontrados = [];
-                if (!this.preBookId) this.busquedaLibro = ''; 
+                // CORRECCIÓN: No borrar la búsqueda para que, si se deselecciona, el texto siga ahí
+                // if (!this.preBookId) this.busquedaLibro = ''; 
                 this.form.cantidad = 1; 
             },
             
@@ -399,18 +396,34 @@
                 if (this.paso1OK && this.preBookId) this.buscarLibros();
             },
             
-            toggleBloque(bloque) {
+            async toggleBloque(bloque) {
                 const index = this.bloquesSeleccionados.indexOf(bloque.id);
                 if (index === -1) {
                     this.bloquesSeleccionados.push(bloque.id);
                 } else {
                     this.bloquesSeleccionados.splice(index, 1);
                 }
-                this.libroSeleccionado = null;
                 
-                // Si completamos el paso 1 y venimos del catálogo, intentar buscar de nuevo
-                if (this.paso1OK && this.preBookId) {
-                    this.buscarLibros();
+                // --- LÓGICA MEJORADA: Re-verificar stock en lugar de resetear a ciegas ---
+                const idLibroPrevio = this.libroSeleccionado ? this.libroSeleccionado.id : null;
+                this.libroSeleccionado = null; // Deseleccionar momentáneamente
+
+                // Si ya tenemos un libro en la mira (o texto en el buscador), refrescamos la búsqueda
+                if (this.busquedaLibro || this.preBookId) {
+                    await this.buscarLibros();
+                    
+                    // Intentamos re-seleccionar automáticamente el libro si sigue disponible
+                    if (idLibroPrevio) {
+                        const found = this.librosEncontrados.find(l => l.id == idLibroPrevio);
+                        if (found) {
+                            if (found.stock_disponible_real > 0) {
+                                this.seleccionarLibro(found);
+                            } else {
+                                // Opcional: Avisar que se perdió la selección por falta de stock
+                                // Swal.fire('Aviso', `El stock ha cambiado para el nuevo horario.`, 'info');
+                            }
+                        }
+                    }
                 }
             },
 
@@ -485,15 +498,18 @@
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
-                    confirmButtonText: 'Sí, cancelar'
+                    confirmButtonText: 'Sí, cancelar',
+                    cancelButtonText: 'No'
                 });
                 if (result.isConfirmed) {
                     try {
                         const res = await fetch(`../api/reservar.php?id=${id}`, { method: 'DELETE' });
                         const data = await res.json();
                         if (data.exito) {
-                            this.cargarReservas();
                             Swal.fire('Cancelada', 'Reserva eliminada.', 'success');
+                            this.cargarReservas();
+                        } else {
+                            Swal.fire('Error', data.mensaje, 'error');
                         }
                     } catch (e) { console.error(e); }
                 }

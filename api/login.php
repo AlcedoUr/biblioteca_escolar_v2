@@ -37,11 +37,18 @@ if ($row = $resultado->fetch_assoc()) {
 
     if ($password_valida) {
         session_start();
+        
+        // --- MEDIDA DE SEGURIDAD ANTI-MEZCLA DE ROLES ---
+        // 1. Destruimos la sesión vieja si existía alguna basura en el navegador
+        session_regenerate_id(true); 
+        
+        // 2. Establecemos los datos nuevos
         $_SESSION['user_id'] = $row['id'];
         $_SESSION['user_rol'] = $row['rol'];
         $_SESSION['user_nombre'] = $row['nombre_completo'];
         
-        $destino = 'vistas/dashboard.php'; 
+        // ... resto del código de redirección igual ...
+        $destino = 'vistas/dashboard.php';
         if ($row['rol'] == 'ESTUDIANTE') {
             $destino = 'vistas/biblioteca_virtual.php'; 
         } 

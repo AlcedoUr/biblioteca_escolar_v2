@@ -15,7 +15,6 @@ if ($metodo == 'GET') {
     // Si es DOCENTE, solo ve sus reservas. Si es ADMIN/BIBLIO, ve todas.
     $filtro_usuario = ($rol == 'DOCENTE') ? "AND r.id_usuario_solicitante = (SELECT id FROM usuarios WHERE id = $id_usuario)" : "";
 
-    // MEJORA: Quitamos "WHERE r.estado = 'PENDIENTE'" para ver el historial completo (Vencidas, Canceladas, etc.)
     $sql = "
         SELECT 
             r.id, 
@@ -66,6 +65,13 @@ if ($metodo == 'POST') {
     $cantidad_solicitada = (int)$data['cantidad'];
     $id_usuario = $_SESSION['user_id'];
 
+    // --- SEGURIDAD: VALIDACIÓN DE CANTIDAD ---
+    if ($cantidad_solicitada <= 0) {
+        echo json_encode(['exito' => false, 'mensaje' => 'La cantidad debe ser mayor a 0.']);
+        exit;
+    }
+    // -----------------------------------------
+
     $sql_libro = "SELECT stock_total, titulo FROM libros WHERE id = $id_libro";
     $res_libro = $conn->query($sql_libro);
     $libro = $res_libro->fetch_assoc();
@@ -106,7 +112,7 @@ if ($metodo == 'POST') {
 }
 
 // =============================================================================
-// 3. CANCELAR RESERVA (DELETE) - MEJORA AGREGADA
+// 3. CANCELAR RESERVA (DELETE)
 // =============================================================================
 if ($metodo == 'DELETE') {
     $id = $_GET['id'] ?? 0;
@@ -116,14 +122,13 @@ if ($metodo == 'DELETE') {
         exit;
     }
 
-    // Solo cancelamos si está PENDIENTE. Si ya fue entregada o vencida, no se toca por integridad.
+    // Solo cancelamos si está PENDIENTE
     $sql = "UPDATE reservas SET estado = 'CANCELADA' WHERE id = $id AND estado = 'PENDIENTE'";
     
     if ($conn->query($sql)) {
         if ($conn->affected_rows > 0) {
             echo json_encode(['exito' => true, 'mensaje' => 'Reserva cancelada correctamente.']);
         } else {
-            // Si no afectó filas, es porque el ID no existe o el estado ya no era PENDIENTE
             echo json_encode(['exito' => false, 'mensaje' => 'No se pudo cancelar (tal vez ya no está pendiente).']);
         }
     } else {
