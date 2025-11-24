@@ -1,5 +1,9 @@
 <?php
 header('Content-Type: application/json');
+// Desactivar visualización de errores HTML para no romper el JSON
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
 require_once '../config/db.php';
 session_start();
 
@@ -16,6 +20,7 @@ $stmt_persona = $conn->prepare("SELECT id_persona FROM usuarios WHERE id = ?");
 $stmt_persona->bind_param("i", $user_id);
 $stmt_persona->execute();
 $result_persona = $stmt_persona->get_result();
+
 if ($result_persona->num_rows == 0) {
     echo json_encode(['exito' => false, 'mensaje' => 'Usuario no vinculado a una persona']);
     http_response_code(404);
@@ -25,16 +30,19 @@ $id_persona = $result_persona->fetch_assoc()['id_persona'];
 
 
 // --- 2. OBTENER HISTORIAL DE PRÉSTAMOS ---
+// CORRECCIÓN: Se agrega JOIN a detalle_prestamo porque prestamos no tiene id_libro
+// CORRECCIÓN: Se usan alias para mantener compatibilidad con el frontend (fecha_devolucion_estimada, estado_prestamo)
 $sql_prestamos = "SELECT 
                     p.id,
                     l.titulo,
                     l.autor,
                     p.fecha_prestamo,
-                    p.fecha_devolucion_estimada,
+                    p.fecha_devolucion_pactada as fecha_devolucion_estimada,
                     p.fecha_devolucion_real,
-                    p.estado_prestamo
+                    p.estado as estado_prestamo
                   FROM prestamos p
-                  JOIN libros l ON p.id_libro = l.id
+                  JOIN detalle_prestamo dp ON p.id = dp.id_prestamo
+                  JOIN libros l ON dp.id_libro = l.id
                   WHERE p.id_persona_solicitante = ?
                   ORDER BY p.fecha_prestamo DESC";
 $stmt_prestamos = $conn->prepare($sql_prestamos);
@@ -46,9 +54,11 @@ $historial = $stmt_prestamos->get_result()->fetch_all(MYSQLI_ASSOC);
 // --- 3. CALCULAR ESTADÍSTICAS ---
 
 // 3.1. Libro más prestado
-$sql_libro_fav = "SELECT l.titulo, COUNT(p.id) as veces_prestado
+// CORRECCIÓN: Se agrega JOIN a detalle_prestamo
+$sql_libro_fav = "SELECT l.titulo, COUNT(dp.id) as veces_prestado
                   FROM prestamos p
-                  JOIN libros l ON p.id_libro = l.id
+                  JOIN detalle_prestamo dp ON p.id = dp.id_prestamo
+                  JOIN libros l ON dp.id_libro = l.id
                   WHERE p.id_persona_solicitante = ?
                   GROUP BY l.titulo
                   ORDER BY veces_prestado DESC
@@ -65,22 +75,25 @@ $vencidos = 0;
 $a_tiempo = 0;
 
 foreach ($historial as $prestamo) {
-    if ($prestamo['estado_prestamo'] == 'DEVUELTO') {
+    // CORRECCIÓN: Usar los estados reales de la BD ('FINALIZADO', 'PENDIENTE')
+    if ($prestamo['estado_prestamo'] == 'FINALIZADO') {
+        // Si se devolvió después de la fecha pactada
         if ($prestamo['fecha_devolucion_real'] > $prestamo['fecha_devolucion_estimada']) {
             $vencidos++;
         } else {
             $a_tiempo++;
         }
-    } elseif ($prestamo['estado_prestamo'] == 'PRESTADO' && date('Y-m-d') > $prestamo['fecha_devolucion_estimada']) {
+    } elseif ($prestamo['estado_prestamo'] == 'PENDIENTE' && date('Y-m-d') > $prestamo['fecha_devolucion_estimada']) {
+        // Préstamo activo pero ya vencido
         $vencidos++;
     }
 }
 
-// 3.3. Reservas canceladas (asumimos que existe una tabla 'reservas' con un estado)
-// Nota: Si la tabla o el estado es diferente, esto necesitará ajuste.
-$sql_reservas_canceladas = "SELECT COUNT(id) as canceladas FROM reservas WHERE id_persona_reserva = ? AND estado = 'CANCELADA'";
+// 3.3. Reservas canceladas
+// CORRECCIÓN: Usamos la columna 'id_usuario_solicitante' y el parametro $user_id
+$sql_reservas_canceladas = "SELECT COUNT(id) as canceladas FROM reservas WHERE id_usuario_solicitante = ? AND estado = 'CANCELADA'";
 $stmt_reservas = $conn->prepare($sql_reservas_canceladas);
-$stmt_reservas->bind_param("i", $id_persona);
+$stmt_reservas->bind_param("i", $user_id); 
 $stmt_reservas->execute();
 $reservas_canceladas = $stmt_reservas->get_result()->fetch_assoc()['canceladas'] ?? 0;
 
@@ -94,8 +107,6 @@ if ($total_prestamos > 0) {
     $score -= ($reservas_canceladas * 2);
     // Cada préstamo devuelto a tiempo suma 1 punto (para incentivar)
     $score += $a_tiempo;
-} else {
-    $score = 100; // Si no tiene historial, su reputación está intacta.
 }
 // El score no puede ser menor que 0 o mayor que 100
 $score = max(0, min(100, $score)); 

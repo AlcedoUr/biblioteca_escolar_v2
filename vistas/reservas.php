@@ -259,6 +259,9 @@
                 modalVisible: false,
                 cargando: false,
                 
+                // Variables para lógica de preselección
+                preBookId: null,
+                
                 busquedaLibro: '',
                 librosEncontrados: [],
                 libroSeleccionado: null,
@@ -268,15 +271,15 @@
                 listaGrados: ['1ro', '2do', '3ro', '4to', '5to', '6to'],
                 listaSecciones: ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
 
-                // HORARIOS OFICIALES ACTUALIZADOS
+                // HORARIOS ACTUALIZADOS (Lógica corregida: Recreo -> 4ta Hora, y siguientes)
                 bloquesHorarios: [
                     { id: 1, label: '1° Hora', inicio: '07:30', fin: '08:15' },
                     { id: 2, label: '2° Hora', inicio: '08:15', fin: '09:00' },
                     { id: 3, label: '3° Hora', inicio: '09:00', fin: '09:45' },
-                    { id: 4, label: 'Recreo',  inicio: '09:45', fin: '10:15' },
-                    { id: 5, label: '4° Hora', inicio: '10:30', fin: '11:15' }, // Ajustado inicio
-                    { id: 6, label: '5° Hora', inicio: '11:15', fin: '12:00' },
-                    { id: 7, label: '6° Hora', inicio: '12:00', fin: '12:45' },
+                    { id: 4, label: '4° Hora', inicio: '09:45', fin: '10:15' }, // Antes Recreo
+                    { id: 5, label: '5° Hora', inicio: '10:30', fin: '11:15' }, // Antes 4°
+                    { id: 6, label: '6° Hora', inicio: '11:15', fin: '12:00' }, // Antes 5°
+                    { id: 7, label: '7° Hora', inicio: '12:00', fin: '12:45' }, // Antes 6°
                     { id: 8, label: 'Salida',  inicio: '12:45', fin: '13:05' }
                 ],
                 bloquesSeleccionados: []
@@ -293,15 +296,35 @@
                 return `${seleccion[0].inicio} - ${seleccion[seleccion.length - 1].fin}`;
             },
             
-            // PASOS WIZARD
             paso1OK() { return this.form.fecha !== '' && this.bloquesSeleccionados.length > 0; },
             paso2OK() { return this.paso1OK && this.libroSeleccionado != null; },
             paso3OK() { return this.paso2OK && this.form.cantidad > 0 && this.form.grado !== '' && this.form.seccion !== ''; }
         },
         mounted() {
             this.cargarReservas();
+            this.verificarPreseleccion();
         },
         methods: {
+            // --- Detectar si venimos del catálogo ---
+            verificarPreseleccion() {
+                const params = new URLSearchParams(window.location.search);
+                if(params.has('book_id')) {
+                    this.preBookId = params.get('book_id');
+                    const titulo = params.get('book_title');
+                    
+                    this.abrirModal();
+                    this.busquedaLibro = titulo;
+                    
+                    Swal.fire({
+                        title: 'Completar Reserva',
+                        html: `Ha seleccionado: <b>${titulo}</b>.<br>Por favor, seleccione la <b>fecha y horas</b> para verificar la disponibilidad.`,
+                        icon: 'info',
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#8B1538'
+                    });
+                }
+            },
+
             async cargarReservas() {
                 try {
                     const res = await fetch('../api/reservar.php');
@@ -312,18 +335,19 @@
             async buscarLibros() {
                 if(this.busquedaLibro.length < 3) { this.librosEncontrados = []; return; }
                 
-                // Calcular horas para filtro
                 const seleccion = this.bloquesHorarios
                     .filter(b => this.bloquesSeleccionados.includes(b.id))
                     .sort((a,b) => a.id - b.id);
                 
+                if(seleccion.length === 0) return; 
+
                 const hIni = seleccion[0].inicio;
                 const hFin = seleccion[seleccion.length - 1].fin;
 
-                // Consulta Inteligente a la API (Stock Real)
+                // AUMENTADO EL LÍMITE A 50 PARA ASEGURAR QUE EL LIBRO APAREZCA
                 const params = new URLSearchParams({
                     q: this.busquedaLibro,
-                    limit: 5,
+                    limit: 50, 
                     fecha: this.form.fecha,
                     hora_ini: hIni,
                     hora_fin: hFin
@@ -332,6 +356,24 @@
                 const res = await fetch(`../api/libros.php?${params}`);
                 const data = await res.json();
                 this.librosEncontrados = data.data;
+
+                // --- Lógica de Auto-selección Robusta ---
+                if (this.preBookId) {
+                    // Buscamos coincidencia exacta por ID
+                    const encontrado = this.librosEncontrados.find(l => l.id == this.preBookId);
+                    
+                    if (encontrado) {
+                        // Si existe pero no hay stock en ese horario, avisamos
+                        if (encontrado.stock_disponible_real <= 0) {
+                            Swal.fire('No disponible', `El libro "${encontrado.titulo}" está agotado en el horario seleccionado.`, 'warning');
+                            this.preBookId = null; // Liberar para que elija otro
+                        } else {
+                            this.seleccionarLibro(encontrado);
+                            this.preBookId = null; 
+                        }
+                    } 
+                    // Si no se encuentra en la lista, es posible que el filtro 'q' sea muy estricto o el ID no coincida
+                }
             },
 
             seleccionarLibro(l) {
@@ -341,7 +383,7 @@
                 }
                 this.libroSeleccionado = l;
                 this.librosEncontrados = [];
-                this.busquedaLibro = '';
+                if (!this.preBookId) this.busquedaLibro = ''; 
                 this.form.cantidad = 1; 
             },
             
@@ -353,8 +395,8 @@
                     Swal.fire({ icon: 'warning', title: 'Día no permitido', text: 'Solo Lunes a Viernes.', confirmButtonColor: '#8B1538' });
                     this.form.fecha = '';
                 }
-                // Resetear libro si cambia fecha
                 this.libroSeleccionado = null;
+                if (this.paso1OK && this.preBookId) this.buscarLibros();
             },
             
             toggleBloque(bloque) {
@@ -364,17 +406,32 @@
                 } else {
                     this.bloquesSeleccionados.splice(index, 1);
                 }
-                // Resetear libro si cambia hora
                 this.libroSeleccionado = null;
+                
+                // Si completamos el paso 1 y venimos del catálogo, intentar buscar de nuevo
+                if (this.paso1OK && this.preBookId) {
+                    this.buscarLibros();
+                }
             },
 
             abrirModal() { 
                 this.modalVisible = true; 
-                this.form = { fecha: '', cantidad: 1, grado: '', seccion: '' }; 
-                this.libroSeleccionado = null; 
-                this.bloquesSeleccionados = []; 
+                if (!this.preBookId) {
+                    this.form = { fecha: '', cantidad: 1, grado: '', seccion: '' }; 
+                    this.libroSeleccionado = null; 
+                    this.bloquesSeleccionados = []; 
+                    this.busquedaLibro = '';
+                }
             },
-            cerrarModal() { this.modalVisible = false; },
+            cerrarModal() { 
+                this.modalVisible = false;
+                if (window.history.replaceState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('book_id');
+                    url.searchParams.delete('book_title');
+                    window.history.replaceState({}, '', url);
+                }
+            },
             
             getDiaSemana(fechaStr) {
                 const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -407,6 +464,10 @@
                         Swal.fire({ icon: 'success', title: 'Reserva Exitosa', text: 'El material ha sido separado.', confirmButtonColor: '#198754' });
                         this.cerrarModal();
                         this.cargarReservas();
+                        this.preBookId = null;
+                        this.form = { fecha: '', cantidad: 1, grado: '', seccion: '' }; 
+                        this.libroSeleccionado = null; 
+                        this.bloquesSeleccionados = []; 
                     } else {
                         Swal.fire({ icon: 'error', title: 'No disponible', text: data.mensaje, confirmButtonColor: '#dc3545' });
                     }
@@ -420,27 +481,21 @@
             async cancelarReserva(id) {
                 const result = await Swal.fire({
                     title: '¿Cancelar reserva?',
-                    text: "Esta acción liberará los libros para otros usuarios.",
+                    text: "Esta acción liberará los libros.",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
-                    confirmButtonText: 'Sí, cancelar',
-                    cancelButtonText: 'No'
+                    confirmButtonText: 'Sí, cancelar'
                 });
-
                 if (result.isConfirmed) {
                     try {
                         const res = await fetch(`../api/reservar.php?id=${id}`, { method: 'DELETE' });
                         const data = await res.json();
                         if (data.exito) {
-                            Swal.fire('Cancelada', 'La reserva ha sido cancelada.', 'success');
                             this.cargarReservas();
-                        } else {
-                            Swal.fire('Error', data.mensaje, 'error');
+                            Swal.fire('Cancelada', 'Reserva eliminada.', 'success');
                         }
-                    } catch (e) {
-                        Swal.fire('Error', 'Fallo de conexión', 'error');
-                    }
+                    } catch (e) { console.error(e); }
                 }
             }
         }
