@@ -437,11 +437,23 @@
                         body: JSON.stringify(payload)
                     });
                     const r = await res.json();
-                    if(r.exito) {
-                        Swal.fire('Listo', 'Préstamo registrado', 'success').then(() => window.location.href='historial.php');
-                    } else {
-                        Swal.fire('Error', r.mensaje, 'error');
-                    }
+                if(r.exito) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: 'Préstamo registrado correctamente.',
+                        confirmButtonText: 'Ir al Historial',
+                        confirmButtonColor: '#8B1538',
+                        allowOutsideClick: false, // Obliga al usuario a dar clic en el botón
+                        allowEscapeKey: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = 'historial.php';
+                        }
+                    });
+                } else {
+                    Swal.fire('Error', r.mensaje, 'error');
+                }
                 } catch(e) { Swal.fire('Error', 'Fallo de red', 'error'); } 
                 finally { this.procesando = false; }
             }
